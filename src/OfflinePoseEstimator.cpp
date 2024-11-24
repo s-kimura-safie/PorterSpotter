@@ -17,10 +17,10 @@
 #include "SNPE/SNPEFactory.hpp"
 #include "Timer.hpp"
 #include "Types.hpp"
-#include "object_detection/Yolov5.hpp"
-#include "nlohmann/json.hpp"
-#include "pose_estimation/PoseEstimator.hpp"
 #include "VisualizationUtil.hpp"
+#include "nlohmann/json.hpp"
+#include "object_detection/Yolov5.hpp"
+#include "pose_estimation/PoseEstimator.hpp"
 
 std::string getStem(const std::string &filePath)
 {

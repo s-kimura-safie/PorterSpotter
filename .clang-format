@@ -1,0 +1,12 @@
+# VSCodeのデフォルトを一部編集
+BasedOnStyle: LLVM
+UseTab: Never
+IndentWidth: 4
+TabWidth: 4
+BreakBeforeBraces: Allman
+AllowShortIfStatementsOnASingleLine: WithoutElse  # デフォルト: false
+IndentCaseLabels: false
+ColumnLimit: 125  # デフォルト値: 0 (制限なし)
+AccessModifierOffset: -4
+NamespaceIndentation: All
+FixNamespaceComments: false

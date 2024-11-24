@@ -10,9 +10,9 @@
 
 #include "DlSystem/RuntimeList.hpp"
 #include "SNPE/SNPE.hpp"
-#include <opencv2/opencv.hpp>
-#include "pose_estimation/PoseUtils.hpp"
 #include "Types.hpp"
+#include "pose_estimation/PoseUtils.hpp"
+#include <opencv2/opencv.hpp>
 
 using SequentialPoseKeypoints = std::deque<std::vector<PosePoint>>;
 const size_t POINTMAXSIZE = 10;
@@ -27,7 +27,7 @@ private:
 
     static void makeFloatImg(const cv::Mat &input, cv::Mat &output);
 
-    std::pair<cv::Mat, cv::Mat> cropImageByDetectBox(const cv::Mat& input_image, const BboxXyxy& box);
+    std::pair<cv::Mat, cv::Mat> cropImageByDetectBox(const cv::Mat &input_image, const BboxXyxy &box);
 
     void decodeOutput(const zdl::DlSystem::TensorMap &tensorMap) const;
     void addPoseKeypoints(const int trackId, const std::vector<PosePoint> &poseKeypoints);
@@ -39,6 +39,6 @@ public:
     ~PoseEstimator();
 
     bool CreateNetwork(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes);
-    std::vector<PosePoint> Inference(const cv::Mat& input_mat, const BboxXyxy& box);
+    std::vector<PosePoint> Inference(const cv::Mat &input_mat, const BboxXyxy &box);
     void Exec(const cv::Mat &input_image, std::vector<TrackedBbox> &tracks);
 };

@@ -9,21 +9,21 @@
 
 #include <fstream>
 #include <getopt.h>
+#include <gflags/gflags.h>
 #include <iostream>
 #include <sys/stat.h>
-#include <gflags/gflags.h>
 
 #include "DlSystem/DlError.hpp"
 #include "DlSystem/RuntimeList.hpp"
 #include "SNPE/SNPEFactory.hpp"
 #include "nlohmann/json.hpp"
 
-#include "object_detection/Yolov5.hpp"
-#include "pose_estimation/PoseEstimator.hpp"
-#include "pipeline/PorterSpotter.hpp"
 #include "Timer.hpp"
 #include "Types.hpp"
 #include "VisualizationUtil.hpp"
+#include "object_detection/Yolov5.hpp"
+#include "pipeline/PorterSpotter.hpp"
+#include "pose_estimation/PoseEstimator.hpp"
 
 // Define and parser command line arguments
 DEFINE_string(d, "./models/yolov5s_exp19_new_quantized.dlc", "Path to detection model DLC file");
@@ -34,7 +34,6 @@ DEFINE_bool(output_video, false, "Save track as annotated video");
 DEFINE_bool(person_box, false, "Draw person bbox in video");
 DEFINE_bool(skeleton, false, "Draw skeleton in video");
 DEFINE_bool(txt, false, "Save track as txt");
-
 
 void writeTrack(std::ofstream &trackOfs, const std::vector<TrackedBbox> &tracks, const int frameCnt, const int utcMsec)
 {
@@ -52,10 +51,9 @@ void writeTrack(std::ofstream &trackOfs, const std::vector<TrackedBbox> &tracks,
     }
 }
 
-
-bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const int frameCnt,
-                  const int utcMsec, cv::VideoWriter &videoWriter, std::ofstream &outputTrackers, 
-                  const bool isSaveVideo, const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
+bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const int frameCnt, const int utcMsec,
+                  cv::VideoWriter &videoWriter, std::ofstream &outputTrackers, const bool isSaveVideo,
+                  const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
 {
 
     cv::Mat rgbImage;
@@ -81,7 +79,7 @@ bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const int frameC
     return true;
 }
 
-bool runVideoAnalysis(PorterSpotter &porterSpotter, const std::string &filePath, const std::string &outDir, 
+bool runVideoAnalysis(PorterSpotter &porterSpotter, const std::string &filePath, const std::string &outDir,
                       const bool isSaveVideo, const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
 {
     const size_t periodIdx = filePath.find_last_of(".");
@@ -110,7 +108,7 @@ bool runVideoAnalysis(PorterSpotter &porterSpotter, const std::string &filePath,
     }
 
     const double readFps = videoCapture.get(cv::CAP_PROP_FPS);
-    const double execFps = 5; 
+    const double execFps = 5;
 
     cv::VideoWriter videoWriter;
     if (isSaveVideo)
@@ -136,8 +134,8 @@ bool runVideoAnalysis(PorterSpotter &porterSpotter, const std::string &filePath,
         }
         if (frameCnt == 0 || secondPassed >= execIntervalSec)
         {
-            processFrame(porterSpotter, image, frameCnt, frameCnt / execFps * 1000, videoWriter,
-                         outputTrackers, isSaveVideo, isDrawPersonBbox, isDrawSkeleton, isSaveTxt);
+            processFrame(porterSpotter, image, frameCnt, frameCnt / execFps * 1000, videoWriter, outputTrackers, isSaveVideo,
+                         isDrawPersonBbox, isDrawSkeleton, isSaveTxt);
             secondPassed -= execIntervalSec;
             frameCnt++;
         }
@@ -220,8 +218,8 @@ int main(int argc, char **argv)
     }
 
     // Run analysis
-    if (runVideoAnalysis(porterSpotter, FLAGS_input_video, FLAGS_output_dir, FLAGS_output_video,
-                         FLAGS_person_box, FLAGS_skeleton, FLAGS_txt))
+    if (runVideoAnalysis(porterSpotter, FLAGS_input_video, FLAGS_output_dir, FLAGS_output_video, FLAGS_person_box,
+                         FLAGS_skeleton, FLAGS_txt))
     {
         return EXIT_SUCCESS;
     }

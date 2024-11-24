@@ -14,7 +14,6 @@
 
 #include "pose_estimation/PoseUtils.hpp"
 
-
 /// @brief Bounding box in corner format
 struct BboxXyxy
 {
@@ -41,7 +40,6 @@ struct BboxUvsr
     double r; // Aspect ratio
 };
 
-
 /// @brief 追跡結果
 struct TrackedBbox
 {
@@ -51,7 +49,6 @@ struct TrackedBbox
     bool isBodyDetected{false}; // トラッカーの推定値が検出結果と関連付けされているとき true
     std::vector<PosePoint> poseKeypoints;
     std::string action;
-    
 
     TrackedBbox() : id(0), velocity(0, 0), bodyBbox(0.0, 0.0, 0.0, 0.0){};
     // TODO: double id -> unsigned int id
@@ -61,14 +58,7 @@ struct TrackedBbox
     TrackedBbox(const double id, const BboxXyxy &bodyBbox, const cv::Vec2d &velocity, const bool isBodyDetected)
         : id(id), velocity(velocity), bodyBbox(bodyBbox), isBodyDetected(isBodyDetected){};
 
-    void AddPoseKeypoints(const std::vector<PosePoint> &poseKeypoints)
-    {
-        this->poseKeypoints = poseKeypoints;
-    }
+    void AddPoseKeypoints(const std::vector<PosePoint> &poseKeypoints) { this->poseKeypoints = poseKeypoints; }
 
-    void ClearPoseKeypoints()
-    {
-        this->poseKeypoints.clear();
-    }
+    void ClearPoseKeypoints() { this->poseKeypoints.clear(); }
 };
-

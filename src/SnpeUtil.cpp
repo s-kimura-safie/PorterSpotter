@@ -87,7 +87,8 @@ std::unique_ptr<zdl::DlSystem::ITensor> SnpeUtil::loadInputTensor(std::unique_pt
     return input;
 }
 
-std::unique_ptr<zdl::DlSystem::ITensor> SnpeUtil::loadInputTensor(std::unique_ptr<zdl::SNPE::SNPE> &snpe, SequentialPoseKeypoints &poseKeypoints)
+std::unique_ptr<zdl::DlSystem::ITensor> SnpeUtil::loadInputTensor(std::unique_ptr<zdl::SNPE::SNPE> &snpe,
+                                                                  SequentialPoseKeypoints &poseKeypoints)
 {
     std::unique_ptr<zdl::DlSystem::ITensor> input;
     const auto &strList_opt = snpe->getInputTensorNames();
@@ -115,7 +116,7 @@ std::unique_ptr<zdl::DlSystem::ITensor> SnpeUtil::loadInputTensor(std::unique_pt
     int net_ch = (int)tensorShape.getDimensions()[3];     // FIXME: Narrowing conversion
 
     for (int i = 0; i < poseKeypoints.size(); i++)
-    {    
+    {
         for (int j = 0; j < poseKeypoints[i].size(); j++)
         {
             float value = poseKeypoints[i][j].x;

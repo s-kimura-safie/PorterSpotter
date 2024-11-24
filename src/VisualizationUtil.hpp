@@ -8,10 +8,10 @@
  */
 
 #pragma once
+#include "MathUtil.hpp"
 #include "Types.hpp"
 #include "pose_estimation/PoseUtils.hpp"
 #include <opencv2/opencv.hpp>
-#include "MathUtil.hpp"
 
 /// @brief 可視化に関連するユーティリティ
 namespace visualization_util
@@ -21,12 +21,12 @@ namespace visualization_util
 
     // Keypoint color palette
     extern const std::vector<cv::Scalar> keypointColors;
-    
+
     void DrawLabel(cv::Mat &image, cv::Point2i point, const std::string &text, const cv::Scalar &color);
 
     // キーポイントを画像に描画する関数
     void drawSkeleton(const std::vector<PosePoint> &points, cv::Mat &image);
-    void drawTracksSkeleton( const std::vector<TrackedBbox> &tracks, cv::Mat &image);
+    void drawTracksSkeleton(const std::vector<TrackedBbox> &tracks, cv::Mat &image);
 
     // 人物のバウンディングボックスを描画する関数
     void drawPersonBbox(cv::Mat &image, const std::vector<TrackedBbox> &tracks);

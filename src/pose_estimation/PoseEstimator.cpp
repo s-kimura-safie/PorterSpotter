@@ -66,24 +66,13 @@ std::pair<cv::Mat, cv::Mat> PoseEstimator::cropImageByDetectBox(const cv::Mat &i
 
     float scale_image_width = box_width * 1.2;
     float scale_image_height = box_height * 1.2;
-    
-    // get the affine matrix
-    cv::Mat affine_transform = GetAffineTransform(
-        box_center_x,
-        box_center_y,
-        scale_image_width,
-        scale_image_height,
-        192,
-        256);
 
-    cv::Mat affine_transform_reverse = GetAffineTransform(
-        box_center_x,
-        box_center_y,
-        scale_image_width,
-        scale_image_height,
-        192,
-        256,
-        true);
+    // get the affine matrix
+    cv::Mat affine_transform =
+        GetAffineTransform(box_center_x, box_center_y, scale_image_width, scale_image_height, 192, 256);
+
+    cv::Mat affine_transform_reverse =
+        GetAffineTransform(box_center_x, box_center_y, scale_image_width, scale_image_height, 192, 256, true);
 
     // affine transform
     cv::Mat affine_image;
@@ -128,7 +117,7 @@ void PoseEstimator::addPoseKeypoints(const int trackId, const std::vector<PosePo
 
 void PoseEstimator::clearDisappearedTracks(const std::vector<int> &trackIds)
 {
-    for (auto it = sequentialPoseKeypointsByTrackId.begin(); it != sequentialPoseKeypointsByTrackId.end(); )
+    for (auto it = sequentialPoseKeypointsByTrackId.begin(); it != sequentialPoseKeypointsByTrackId.end();)
     {
         if (std::find(trackIds.begin(), trackIds.end(), it->first) == trackIds.end())
         {
@@ -164,8 +153,7 @@ bool PoseEstimator::CreateNetwork(const uint8_t *buffer, const size_t size, cons
     for (const std::string &runtime_str : runtimes)
     {
         const zdl::DlSystem::Runtime_t runtime = zdl::DlSystem::RuntimeList::stringToRuntime(runtime_str.c_str());
-        if (runtime == zdl::DlSystem::Runtime_t::UNSET)
-            return false;
+        if (runtime == zdl::DlSystem::Runtime_t::UNSET) return false;
         runtimeList.add(runtime);
     }
 
@@ -211,17 +199,17 @@ std::vector<PosePoint> PoseEstimator::Inference(const cv::Mat &input_mat, const 
 
     // TODO: preprocess() で関数化
     // BGR to RGB
-	cv::Mat input_mat_copy_rgb;
-	cv::cvtColor(crop_mat_copy, input_mat_copy_rgb, cv::COLOR_BGR2RGB);
-    
+    cv::Mat input_mat_copy_rgb;
+    cv::cvtColor(crop_mat_copy, input_mat_copy_rgb, cv::COLOR_BGR2RGB);
+
     // Standardization
     cv::Mat input_mat_copy_rgb_std;
     makeFloatImg(input_mat_copy_rgb, input_mat_copy_rgb_std);
 
     // image data, HWC->CHW, image_data - mean / std normalize
-	int image_channels = input_mat_copy_rgb_std.channels();
-	int image_height = input_mat_copy_rgb_std.rows;
-	int image_width = input_mat_copy_rgb_std.cols;
+    int image_channels = input_mat_copy_rgb_std.channels();
+    int image_height = input_mat_copy_rgb_std.rows;
+    int image_width = input_mat_copy_rgb_std.cols;
 
     // inference
     std::unique_ptr<zdl::DlSystem::ITensor> inputTensor = SnpeUtil::loadInputTensor(network, input_mat_copy_rgb_std);
@@ -243,17 +231,19 @@ std::vector<PosePoint> PoseEstimator::Inference(const cv::Mat &input_mat, const 
     zdl::DlSystem::TensorShape simcc_y_dims = simcc_y->getShape();
 
     int batch_size = 0;
-    if (simcc_x_dims[0] == simcc_y_dims[0]) {
-        batch_size = simcc_x_dims[0];       // batch_size: 1
-    } 
+    if (simcc_x_dims[0] == simcc_y_dims[0])
+    {
+        batch_size = simcc_x_dims[0]; // batch_size: 1
+    }
 
     int joint_num = 0;
-    if (simcc_x_dims[1] == simcc_y_dims[1]) {
-        joint_num = simcc_x_dims[1];        // joint_num: 17
-    } 
+    if (simcc_x_dims[1] == simcc_y_dims[1])
+    {
+        joint_num = simcc_x_dims[1]; // joint_num: 17
+    }
 
-    int extend_width = simcc_x_dims[2];     // extend_width: 384
-    int extend_height = simcc_y_dims[2];    // extend_width: 512
+    int extend_width = simcc_x_dims[2];  // extend_width: 384
+    int extend_height = simcc_y_dims[2]; // extend_width: 512
 
     auto ptrX = simcc_x->cbegin();
     auto ptrY = simcc_y->cbegin();
@@ -263,13 +253,15 @@ std::vector<PosePoint> PoseEstimator::Inference(const cv::Mat &input_mat, const 
     for (int i = 0; i < joint_num; i++)
     {
         // find the maximum and maximum indexes in the value of each Extend_width length
-        auto x_biggest_iter = std::max_element(simcc_x_result + i * extend_width, simcc_x_result + i * extend_width + extend_width);
+        auto x_biggest_iter =
+            std::max_element(simcc_x_result + i * extend_width, simcc_x_result + i * extend_width + extend_width);
         int max_x_pos = std::distance(simcc_x_result + i * extend_width, x_biggest_iter);
         float pose_x = static_cast<float>(max_x_pos) / 2.0f;
         float score_x = *x_biggest_iter;
 
         // find the maximum and maximum indexes in the value of each exten_height length
-        auto y_biggest_iter = std::max_element(simcc_y_result + i * extend_height, simcc_y_result + i * extend_height + extend_height);
+        auto y_biggest_iter =
+            std::max_element(simcc_y_result + i * extend_height, simcc_y_result + i * extend_height + extend_height);
         int max_y_pos = std::distance(simcc_y_result + i * extend_height, y_biggest_iter);
         float pose_y = static_cast<float>(max_y_pos) / 2.0f;
         float score_y = *y_biggest_iter;
@@ -311,11 +303,11 @@ void PoseEstimator::Exec(const cv::Mat &input_image, std::vector<TrackedBbox> &t
 {
     std::vector<int> trackIds;
     for (TrackedBbox &track : tracks)
-    {   
+    {
         trackIds.push_back(track.id);
         std::vector<PosePoint> posePoints;
         posePoints = Inference(input_image, track.bodyBbox);
-        if (!posePoints.empty()) 
+        if (!posePoints.empty())
         {
             std::vector<PosePoint> poseKeypoints_removed;
             removeEyesAndEars(posePoints, poseKeypoints_removed);
@@ -325,16 +317,12 @@ void PoseEstimator::Exec(const cv::Mat &input_image, std::vector<TrackedBbox> &t
     }
 
     clearDisappearedTracks(trackIds);
-  
-    for (const auto& pair : sequentialPoseKeypointsByTrackId)
+
+    for (const auto &pair : sequentialPoseKeypointsByTrackId)
     {
         int trackId = pair.first;
-        const SequentialPoseKeypoints& keypoints = pair.second;
+        const SequentialPoseKeypoints &keypoints = pair.second;
 
-        std::cout << "Track ID: " << trackId 
-                  << ", Number of Pose Sequences: " << keypoints.size() << std::endl;
+        std::cout << "Track ID: " << trackId << ", Number of Pose Sequences: " << keypoints.size() << std::endl;
     }
 }
-
-
-

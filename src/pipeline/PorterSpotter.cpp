@@ -13,7 +13,7 @@ PorterSpotter::PorterSpotter()
 {
     isDetectionModelReady = false;
     isPoseEstimatorModelReady = false;
-    
+
     const bool isSortOn = false;
     const double confidenceThreshold = 0.35;
     byte.SetSortOn(isSortOn);
@@ -35,7 +35,8 @@ bool PorterSpotter::InitializeDetection(const uint8_t *buffer, const size_t size
     }
 }
 
-bool PorterSpotter::InitializePoseEstimator(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes)
+bool PorterSpotter::InitializePoseEstimator(const uint8_t *buffer, const size_t size,
+                                            const std::vector<std::string> &runtimes)
 {
     if (poseEstimator.CreateNetwork(buffer, size, runtimes))
     {
@@ -47,7 +48,6 @@ bool PorterSpotter::InitializePoseEstimator(const uint8_t *buffer, const size_t 
         return false;
     }
 }
-
 
 void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &tracks)
 {
@@ -63,9 +63,7 @@ void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &track
 
     // action recognition
     for (TrackedBbox &track : tracks)
-    {   
+    {
         // hold detection
-
     }
-
 }

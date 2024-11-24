@@ -12,9 +12,9 @@
 #include <iostream>
 #include <string>
 
-#include "tracking/Byte.hpp"
 #include "object_detection/Yolov5.hpp"
 #include "pose_estimation/PoseEstimator.hpp"
+#include "tracking/Byte.hpp"
 
 /// @brief 人物の体を検出し、追跡を行い、ポーズを推定し、時系列のポーズデータを解析し、転倒を検知するクラス
 class PorterSpotter
@@ -23,7 +23,7 @@ private:
     Yolov5 yolov5;
     Byte byte;
     PoseEstimator poseEstimator;
-    
+
     bool isDetectionModelReady;
     bool isPoseEstimatorModelReady;
 

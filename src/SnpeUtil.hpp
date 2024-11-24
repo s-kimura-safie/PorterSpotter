@@ -25,5 +25,6 @@ namespace SnpeUtil
 
     typedef unsigned int GLuint;
     std::unique_ptr<zdl::DlSystem::ITensor> loadInputTensor(std::unique_ptr<zdl::SNPE::SNPE> &snpe, cv::Mat inputImage);
-    std::unique_ptr<zdl::DlSystem::ITensor> loadInputTensor(std::unique_ptr<zdl::SNPE::SNPE> &snpe, SequentialPoseKeypoints &poseKeypoints);
+    std::unique_ptr<zdl::DlSystem::ITensor> loadInputTensor(std::unique_ptr<zdl::SNPE::SNPE> &snpe,
+                                                            SequentialPoseKeypoints &poseKeypoints);
 }

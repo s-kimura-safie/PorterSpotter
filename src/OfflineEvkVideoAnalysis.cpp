@@ -17,15 +17,14 @@
 #include "SNPE/SNPEFactory.hpp"
 #include "nlohmann/json.hpp"
 
-#include "detect/Yolov5.hpp"
-#include "pose/PoseEstimator.hpp"
-#include "pipeline/FallDetection.hpp"
-#include "action_recognition/STGCN.hpp"
-#include "Timer.hpp"
-#include "Types.hpp"
 #include "KeypointColorPalette.hpp"
 #include "MathUtil.hpp"
+#include "Timer.hpp"
+#include "Types.hpp"
 #include "VisualizationUtil.hpp"
+#include "detect/Yolov5.hpp"
+#include "pipeline/FallDetection.hpp"
+#include "pose/PoseEstimator.hpp"
 
 void split(std::vector<std::string> &output, const std::string &input, char delimiter)
 {
@@ -35,42 +34,6 @@ void split(std::vector<std::string> &output, const std::string &input, char deli
     while (std::getline(iss, item, delimiter))
     {
         output.push_back(item);
-    }
-}
-
-// キーポイントを画像に描画する関数
-void drawSkeleton(cv::Mat &image, const std::vector<TrackedBbox> &tracks)
-{
-    // 骨格を定義（キーポイントのインデックスペア）
-    const std::vector<std::pair<int, int>> skeleton = {{1, 2},  {1, 3},
-                                                       {3, 5},   {2, 4},   {4, 6},  {1, 7}, {2, 8}, {7, 8},
-                                                       {7, 9}, {9, 11}, {8, 10}, {10, 12}};
-    // const std::vector<std::pair<int, int>> skeleton = {{0, 1},   {0, 2},   {1, 3},   {2, 4},  {5, 6},  {5, 7},
-    //                                                    {7, 9},   {6, 8},   {8, 10},  {5, 11}, {6, 12}, {11, 12},
-    //                                                    {11, 13}, {13, 15}, {12, 14}, {14, 16}};
-    // キーポイントの大きさと色
-    const int radius = 4;
-    const std::vector<cv::Scalar> keypointColors = KeypointColorPalette::keypointColors;
-
-    for (const TrackedBbox &track : tracks)
-    {   
-        std::vector<PosePoint> points = track.poseKeypoints;
-        // 骨格を描画
-        for (const auto &bone : skeleton)
-        {
-            const int startIdx = bone.first;
-            const int endIdx = bone.second;
-            const cv::Point startPoint = cv::Point(static_cast<int>(points[startIdx].x * image.cols), static_cast<int>(points[startIdx].y * image.rows));
-            const cv::Point endPoint = cv::Point(static_cast<int>(points[endIdx].x * image.cols), static_cast<int>(points[endIdx].y * image.rows));
-            cv::line(image, startPoint, endPoint, cv::Scalar(0, 0, 255), 2); // 赤色の線
-        }
-        // キーポイントを描画
-        for (size_t keyPointIdx = 0; keyPointIdx < points.size(); keyPointIdx++)
-        {
-            PosePoint point = points[keyPointIdx];
-            // # circle(画像, 中心座標, 半径, 色, 線幅, 連結)
-            cv::circle(image, cv::Point(static_cast<int>(point.x * image.cols), static_cast<int>(point.y * image.rows)), radius, keypointColors[keyPointIdx], cv::FILLED);
-        }
     }
 }
 
@@ -96,7 +59,8 @@ void drawPersonBbox(cv::Mat &image, const std::vector<TrackedBbox> &tracks)
     }
 }
 
-bool processFrame(FallDetection &fallDetection, cv::Mat &image, const int frameCnt, const int utcMsec, cv::VideoWriter &videoWriter, Timer &t_detection, Timer &t_poseEstimation, Timer &t_actionRecognition)
+bool processFrame(FallDetection &fallDetection, cv::Mat &image, const int frameCnt, const int utcMsec,
+                  cv::VideoWriter &videoWriter, Timer &t_detection, Timer &t_poseEstimation, Timer &t_actionRecognition)
 {
 
     cv::Mat rgbImage;
@@ -169,7 +133,8 @@ bool runVideoAnalysis(FallDetection &fallDetection, const std::string &filePath,
         }
         if (frameCnt == 0 || secondPassed >= execIntervalSec)
         {
-            processFrame(fallDetection, image, frameCnt, frameCnt / execFps * 1000, videoWriter, t_detection, t_poseEstimation, t_actionRecognition);
+            processFrame(fallDetection, image, frameCnt, frameCnt / execFps * 1000, videoWriter, t_detection,
+                         t_poseEstimation, t_actionRecognition);
             secondPassed -= execIntervalSec;
             frameCnt++;
         }
