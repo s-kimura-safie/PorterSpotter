@@ -7,13 +7,12 @@
  * without the prior consent of Safie Inc.
  */
 
-#include "FallDetection.hpp"
+#include "PorterSpotter.hpp"
 
-FallDetection::FallDetection()
+PorterSpotter::PorterSpotter()
 {
     isDetectionModelReady = false;
     isPoseEstimatorModelReady = false;
-    isActionRecognitionModelReady = false;
     
     const bool isSortOn = false;
     const double confidenceThreshold = 0.35;
@@ -21,9 +20,9 @@ FallDetection::FallDetection()
     byte.SetConfidenceThreshold(confidenceThreshold);
 }
 
-FallDetection::~FallDetection() {}
+PorterSpotter::~PorterSpotter() {}
 
-bool FallDetection::InitializeDetection(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes)
+bool PorterSpotter::InitializeDetection(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes)
 {
     if (yolov5.CreateNetwork(buffer, size, runtimes))
     {
@@ -36,7 +35,7 @@ bool FallDetection::InitializeDetection(const uint8_t *buffer, const size_t size
     }
 }
 
-bool FallDetection::InitializePoseEstimator(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes)
+bool PorterSpotter::InitializePoseEstimator(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes)
 {
     if (poseEstimator.CreateNetwork(buffer, size, runtimes))
     {
@@ -49,20 +48,8 @@ bool FallDetection::InitializePoseEstimator(const uint8_t *buffer, const size_t 
     }
 }
 
-bool FallDetection::InitializeActionRecognition(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes)
-{
-    if (stgcn.CreateNetwork(buffer, size, runtimes))
-    {
-        isActionRecognitionModelReady = true;
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
 
-void FallDetection::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &tracks)
+void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &tracks)
 {
     // detection
     std::vector<BboxXyxy> detectedObjects;
@@ -77,9 +64,8 @@ void FallDetection::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &track
     // action recognition
     for (TrackedBbox &track : tracks)
     {   
-        int trackId = track.id;
-        const SequentialPoseKeypoints sequentialPoseKeypoints = poseEstimator.sequentialPoseKeypointsByTrackId.at(trackId);
-        if (sequentialPoseKeypoints.size() == 10)  stgcn.Exec(sequentialPoseKeypoints, track);
+        // hold detection
+
     }
 
 }

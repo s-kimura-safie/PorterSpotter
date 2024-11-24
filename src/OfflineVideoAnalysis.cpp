@@ -18,10 +18,9 @@
 #include "SNPE/SNPEFactory.hpp"
 #include "nlohmann/json.hpp"
 
-#include "detect/Yolov5.hpp"
-#include "pose/PoseEstimator.hpp"
-#include "pipeline/FallDetection.hpp"
-#include "action_recognition/STGCN.hpp"
+#include "object_detection/Yolov5.hpp"
+#include "pose_estimation/PoseEstimator.hpp"
+#include "pipeline/PorterSpotter.hpp"
 #include "Timer.hpp"
 #include "Types.hpp"
 #include "KeypointColorPalette.hpp"
@@ -31,7 +30,6 @@
 // Define and parser command line arguments
 DEFINE_string(d, "./models/yolov5s_exp19_new_quantized.dlc", "Path to detection model DLC file");
 DEFINE_string(h, "./models/rtmpose.dlc", "Path to pose estimation model DLC file");
-DEFINE_string(a, "./models/stgcn.dlc", "Path to action recognition model DLC file");
 DEFINE_string(input_video, "videos/sample.mp4", "Path to input video file. e.g. sample.mp4");
 DEFINE_string(output_dir, "outputs", "Path to output dir");
 DEFINE_bool(output_video, false, "Save track as annotated video");
@@ -114,7 +112,7 @@ void drawPersonBbox(cv::Mat &image, const std::vector<TrackedBbox> &tracks)
     }
 }
 
-bool processFrame(FallDetection &fallDetection, cv::Mat &image, const int frameCnt,
+bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const int frameCnt,
                   const int utcMsec, cv::VideoWriter &videoWriter, std::ofstream &outputTrackers, 
                   const bool isSaveVideo, const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
 {
@@ -123,7 +121,7 @@ bool processFrame(FallDetection &fallDetection, cv::Mat &image, const int frameC
     cv::cvtColor(image, rgbImage, cv::COLOR_BGR2RGB);
 
     std::vector<TrackedBbox> tracks;
-    fallDetection.Run(rgbImage, tracks);
+    porterSpotter.Run(rgbImage, tracks);
 
     if (isSaveTxt) writeTrack(outputTrackers, tracks, frameCnt, utcMsec);
     if (isDrawSkeleton) drawSkeleton(image, tracks);
@@ -142,7 +140,7 @@ bool processFrame(FallDetection &fallDetection, cv::Mat &image, const int frameC
     return true;
 }
 
-bool runVideoAnalysis(FallDetection &fallDetection, const std::string &filePath, const std::string &outDir, 
+bool runVideoAnalysis(PorterSpotter &porterSpotter, const std::string &filePath, const std::string &outDir, 
                       const bool isSaveVideo, const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
 {
     const size_t periodIdx = filePath.find_last_of(".");
@@ -197,7 +195,7 @@ bool runVideoAnalysis(FallDetection &fallDetection, const std::string &filePath,
         }
         if (frameCnt == 0 || secondPassed >= execIntervalSec)
         {
-            processFrame(fallDetection, image, frameCnt, frameCnt / execFps * 1000, videoWriter,
+            processFrame(porterSpotter, image, frameCnt, frameCnt / execFps * 1000, videoWriter,
                          outputTrackers, isSaveVideo, isDrawPersonBbox, isDrawSkeleton, isSaveTxt);
             secondPassed -= execIntervalSec;
             frameCnt++;
@@ -209,7 +207,7 @@ bool runVideoAnalysis(FallDetection &fallDetection, const std::string &filePath,
     return true;
 }
 
-bool initModel(FallDetection &fallDetection, const std::string &modelType, const std::string &dlcPath,
+bool initModel(PorterSpotter &porterSpotter, const std::string &modelType, const std::string &dlcPath,
                const std::vector<std::string> &runtimes)
 {
     // Get model file size using stat
@@ -235,7 +233,7 @@ bool initModel(FallDetection &fallDetection, const std::string &modelType, const
     // Create network with selected runtime
     if (modelType == "detection")
     {
-        if (!fallDetection.InitializeDetection((const uint8_t *)dlcBuff.data(), fileSize, runtimes))
+        if (!porterSpotter.InitializeDetection((const uint8_t *)dlcBuff.data(), fileSize, runtimes))
         {
             std::cout << "Couldn't create network instance." << std::endl;
             return false;
@@ -243,15 +241,7 @@ bool initModel(FallDetection &fallDetection, const std::string &modelType, const
     }
     else if (modelType == "pose")
     {
-        if (!fallDetection.InitializePoseEstimator((const uint8_t *)dlcBuff.data(), fileSize, runtimes))
-        {
-            std::cout << "Couldn't create network instance." << std::endl;
-            return false;
-        }
-    }
-    else if (modelType == "action")
-    {
-        if (!fallDetection.InitializeActionRecognition((const uint8_t *)dlcBuff.data(), fileSize, runtimes))
+        if (!porterSpotter.InitializePoseEstimator((const uint8_t *)dlcBuff.data(), fileSize, runtimes))
         {
             std::cout << "Couldn't create network instance." << std::endl;
             return false;
@@ -272,29 +262,24 @@ int main(int argc, char **argv)
     gflags::SetUsageMessage("Offline analysis program for fall detection.");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-    FallDetection fallDetection;
+    PorterSpotter porterSpotter;
     std::string modelType1 = "detection";
     std::string modelType2 = "pose";
     std::string modelType3 = "action";
     const std::vector<std::string> runtimes = {"cpu"};
-    if (!initModel(fallDetection, modelType1, FLAGS_d, runtimes))
+    if (!initModel(porterSpotter, modelType1, FLAGS_d, runtimes))
     {
         std::cout << "Failed to initialize detection model" << std::endl;
         return false;
     }
-    if (!initModel(fallDetection, modelType2, FLAGS_h, runtimes))
+    if (!initModel(porterSpotter, modelType2, FLAGS_h, runtimes))
     {
         std::cout << "Failed to initialize opse estimation model" << std::endl;
         return false;
     }
-    if (!initModel(fallDetection, modelType3, FLAGS_a, runtimes))
-    {
-        std::cout << "Failed to initialize action recognition model" << std::endl;
-        return false;
-    }
 
     // Run analysis
-    if (runVideoAnalysis(fallDetection, FLAGS_input_video, FLAGS_output_dir, FLAGS_output_video,
+    if (runVideoAnalysis(porterSpotter, FLAGS_input_video, FLAGS_output_dir, FLAGS_output_video,
                          FLAGS_person_box, FLAGS_skeleton, FLAGS_txt))
     {
         return EXIT_SUCCESS;

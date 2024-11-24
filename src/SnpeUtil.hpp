@@ -16,7 +16,7 @@
 #include "DlContainer/IDlContainer.hpp"
 #include "SNPE/SNPE.hpp"
 
-#include "pose/PoseEstimator.hpp"
+#include "pose_estimation/PoseEstimator.hpp"
 
 namespace SnpeUtil
 {

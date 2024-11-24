@@ -18,9 +18,9 @@
 #include "SNPE/SNPEFactory.hpp"
 #include "Timer.hpp"
 #include "Types.hpp"
-#include "detect/Yolov5.hpp"
+#include "object_detection/Yolov5.hpp"
 #include "nlohmann/json.hpp"
-#include "pose/PoseEstimator.hpp"
+#include "pose_estimation/PoseEstimator.hpp"
 
 std::string getStem(const std::string &filePath)
 {
