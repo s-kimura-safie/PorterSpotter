@@ -164,7 +164,7 @@ void visualization_util::drawTracksSkeleton(const std::vector<TrackedBbox> &trac
     }
 }
 
-void visualization_util::drawPersonBbox(cv::Mat &image, const std::vector<TrackedBbox> &tracks)
+void visualization_util::drawPersonBbox(const std::vector<TrackedBbox> &tracks, cv::Mat &image)
 {
     for (size_t i = 0; i < tracks.size(); i++)
     {

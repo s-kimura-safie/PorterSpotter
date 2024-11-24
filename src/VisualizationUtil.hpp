@@ -30,5 +30,5 @@ namespace visualization_util
     void drawTracksSkeleton(const std::vector<TrackedBbox> &tracks, cv::Mat &image);
 
     // 人物のバウンディングボックスを描画する関数
-    void drawPersonBbox(cv::Mat &image, const std::vector<TrackedBbox> &tracks);
+    void drawPersonBbox(const std::vector<TrackedBbox> &tracks, cv::Mat &image);
 }

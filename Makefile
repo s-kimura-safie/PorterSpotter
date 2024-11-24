@@ -83,7 +83,7 @@ SA_OBJ_DIR      := $(OBJ_DIR)
 SA_OBJS         := $(SA_SRCS:$(SA_SRC_DIR)/%.cpp=$(SA_OBJ_DIR)/%.o)
 
 # List .cpp files which contains main
-MAIN_SRCS		:= OfflinePoseEstimator.cpp OfflineVideoAnalysis.cpp 
+MAIN_SRCS		:= OfflinePoseEstimator.cpp OfflineVideoAnalysis.cpp OfflineImageAnalysis.cpp
 MAIN_OBJS		:= $(MAIN_SRCS:%.cpp=$(SA_OBJ_DIR)/%.o)
 SA_OBJS_WO_MAIN	:= $(filter-out $(MAIN_OBJS), $(SA_OBJS))
 

@@ -7,11 +7,15 @@
  * without the prior consent of Safie Inc.
  */
 
+#include <dirent.h>
+#include <filesystem>
 #include <fstream>
 #include <getopt.h>
 #include <gflags/gflags.h>
 #include <iostream>
+#include <string>
 #include <sys/stat.h>
+#include <vector>
 
 #include "DlSystem/DlError.hpp"
 #include "DlSystem/RuntimeList.hpp"
@@ -28,21 +32,69 @@
 // Define and parser command line arguments
 DEFINE_string(d, "./models/yolov5s_exp19_new_quantized.dlc", "Path to detection model DLC file");
 DEFINE_string(h, "./models/rtmpose.dlc", "Path to pose estimation model DLC file");
-DEFINE_string(input_video, "videos/sample.mp4", "Path to input video file. e.g. sample.mp4");
+DEFINE_string(input_file, "videos/sample.mp4", "Path to input video file. e.g. sample.mp4");
 DEFINE_string(output_dir, "outputs", "Path to output dir");
-DEFINE_bool(output_video, false, "Save track as annotated video");
 DEFINE_bool(person_box, false, "Draw person bbox in video");
 DEFINE_bool(skeleton, false, "Draw skeleton in video");
 DEFINE_bool(txt, false, "Save track as txt");
 
-void writeTrack(std::ofstream &trackOfs, const std::vector<TrackedBbox> &tracks, const int frameCnt, const int utcMsec)
+std::string getStem(const std::string &filePath)
+{
+    // strip path of directory and extension
+    // ex) "dir1/dir2/stem.ext" -> "stem"
+
+    // strip extension
+    size_t pos = filePath.rfind('.');
+    const std::string baseName = filePath.substr(0, pos);
+
+    // strip dir name
+    pos = baseName.rfind('/');
+    if (pos == std::string::npos)
+    {
+        return baseName;
+    }
+    else
+    {
+        return baseName.substr(pos + 1);
+    }
+}
+
+std::vector<std::string> getAllFiles(const std::string &directoryPath)
+{
+    std::vector<std::string> files;
+    DIR *dir;
+    struct dirent *ent;
+    struct stat st;
+
+    dir = opendir(directoryPath.c_str());
+    if (dir != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            const std::string file_name = ent->d_name;
+            const std::string full_file_name = directoryPath + "/" + file_name;
+
+            if (stat(full_file_name.c_str(), &st) == 0)
+            {
+                if (S_ISREG(st.st_mode))
+                {
+                    files.push_back(full_file_name);
+                }
+            }
+        }
+        closedir(dir);
+    }
+
+    return files;
+}
+
+void writeTrack(std::ofstream &trackOfs, const std::vector<TrackedBbox> &tracks)
 {
     for (size_t i = 0; i < tracks.size(); i++)
     {
         const TrackedBbox &trackedBbox = tracks[i];
         if (trackOfs.is_open())
         {
-            trackOfs << frameCnt << "," << utcMsec << "," << trackedBbox.id << std::endl;
             for (const PosePoint &point : trackedBbox.poseKeypoints)
             {
                 trackOfs << point.x << "," << point.y << ",";
@@ -51,9 +103,8 @@ void writeTrack(std::ofstream &trackOfs, const std::vector<TrackedBbox> &tracks,
     }
 }
 
-bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const int frameCnt, const int utcMsec,
-                  cv::VideoWriter &videoWriter, std::ofstream &outputTrackers, const bool isSaveVideo,
-                  const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
+bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, std::ofstream &outputTrackers, const bool isDrawPersonBbox,
+                  const bool isDrawSkeleton, const bool isSaveTxt, cv::Mat outImage)
 {
 
     cv::Mat rgbImage;
@@ -62,10 +113,9 @@ bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const int frameC
     std::vector<TrackedBbox> tracks;
     porterSpotter.Run(rgbImage, tracks);
 
-    if (isSaveTxt) writeTrack(outputTrackers, tracks, frameCnt, utcMsec);
-    if (isDrawSkeleton) visualization_util::drawTracksSkeleton(tracks, image);
-    if (isDrawPersonBbox) visualization_util::drawPersonBbox(tracks, image);
-    if (isSaveVideo) videoWriter << image;
+    if (isSaveTxt) writeTrack(outputTrackers, tracks);
+    if (isDrawSkeleton) visualization_util::drawTracksSkeleton(tracks, outImage);
+    if (isDrawPersonBbox) visualization_util::drawPersonBbox(tracks, outImage);
 
     for (const TrackedBbox &track : tracks)
     {
@@ -79,70 +129,29 @@ bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const int frameC
     return true;
 }
 
-bool runVideoAnalysis(PorterSpotter &porterSpotter, const std::string &filePath, const std::string &outDir,
-                      const bool isSaveVideo, const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
+bool runImageAnalysis(PorterSpotter &porterSpotter, const std::string &directoryPath, const std::string &outDir,
+                      const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
 {
-    const size_t periodIdx = filePath.find_last_of(".");
-    size_t slashIdx = filePath.find_last_of("/");
-    slashIdx = (slashIdx == std::string::npos) ? 0 : slashIdx + 1;
-    const std::string basename = filePath.substr(slashIdx, periodIdx - slashIdx);
-
-    cv::VideoCapture videoCapture;
-    videoCapture.open(filePath);
-    if (!videoCapture.isOpened())
-    {
-        std::cout << "Couldn't read video: " << filePath << std::endl;
-        return false;
-    }
-    else
-    {
-        std::cout << "Read video: " << filePath << std::endl;
-    }
+    // Get images from path
+    std::vector<std::string> inputFiles = getAllFiles(directoryPath);
 
     std::cout << "Running network..." << std::endl;
 
-    std::ofstream outputTrackers;
-    if (isSaveTxt)
+    for (const std::string &inputFile : inputFiles)
     {
-        outputTrackers.open(outDir + "/" + "output_" + basename + "_trackers.txt", std::ios_base::out);
+        cv::Mat inputImage = cv::imread(inputFile);
+        cv::Mat outImage = inputImage.clone();
+        std::ofstream outputTrackers;
+        std::string outputImageFile = outDir + "/" + getStem(inputFile) + "_output.jpg";
+        if (isSaveTxt) outputTrackers.open(outDir + "/" + getStem(inputFile) + "output_trackers.txt", std::ios_base::out);
+
+        // inputImage is BGR order
+        processFrame(porterSpotter, inputImage, outputTrackers, isDrawPersonBbox, isDrawSkeleton, isSaveTxt, outImage);
+        cv::imwrite(outputImageFile, outImage);
+        porterSpotter.ResetTracker(); //画像が連続の場合はコメントアウト
+        outputTrackers.close();
     }
 
-    const double readFps = videoCapture.get(cv::CAP_PROP_FPS);
-    const double execFps = 5;
-
-    cv::VideoWriter videoWriter;
-    if (isSaveVideo)
-    {
-        const std::string outputVideoFile = outDir + "/" + "output_" + basename + ".mp4";
-        const int fourcc = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
-        const int width = (int)videoCapture.get(cv::CAP_PROP_FRAME_WIDTH);
-        const int height = (int)videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
-        videoWriter.open(outputVideoFile, fourcc, execFps, cv::Size(width, height));
-    }
-
-    const double readIntervalSec = 1 / readFps;
-    const double execIntervalSec = 1 / execFps;
-    int frameCnt = 0;
-    double secondPassed = 0;
-    while (1)
-    {
-        cv::Mat image;
-        videoCapture >> image; // videoからimageへ1フレームを取り込む
-        if (image.empty() == true)
-        {
-            break; // 画像が読み込めなかったとき、無限ループを抜ける
-        }
-        if (frameCnt == 0 || secondPassed >= execIntervalSec)
-        {
-            processFrame(porterSpotter, image, frameCnt, frameCnt / execFps * 1000, videoWriter, outputTrackers, isSaveVideo,
-                         isDrawPersonBbox, isDrawSkeleton, isSaveTxt);
-            secondPassed -= execIntervalSec;
-            frameCnt++;
-        }
-        secondPassed += readIntervalSec;
-    }
-    outputTrackers.close();
-    videoCapture.release();
     return true;
 }
 
@@ -218,8 +227,7 @@ int main(int argc, char **argv)
     }
 
     // Run analysis
-    if (runVideoAnalysis(porterSpotter, FLAGS_input_video, FLAGS_output_dir, FLAGS_output_video, FLAGS_person_box,
-                         FLAGS_skeleton, FLAGS_txt))
+    if (runImageAnalysis(porterSpotter, FLAGS_input_file, FLAGS_output_dir, FLAGS_person_box, FLAGS_skeleton, FLAGS_txt))
     {
         return EXIT_SUCCESS;
     }

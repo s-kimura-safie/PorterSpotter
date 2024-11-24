@@ -49,6 +49,11 @@ bool PorterSpotter::InitializePoseEstimator(const uint8_t *buffer, const size_t 
     }
 }
 
+void PorterSpotter::ResetTracker()
+{
+    byte.Reset();
+}
+
 void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &tracks)
 {
     // detection
