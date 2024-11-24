@@ -1,6 +1,6 @@
 #!/bin/bash -eu
 
-# cd to EdgeObjectRecog root dir
+# cd to Porter Spotter root dir
 APP_ROOT=$(cd $(dirname $BASH_SOURCE)/../..; pwd)
 cd $APP_ROOT
 
@@ -17,8 +17,8 @@ SNPE_DIR=$(find $SDK_DIR -maxdepth 1  -name "snpe*" -type d)
 echo "SNPE_DIR=$SNPE_DIR"
 
 docker run -it --rm \
-    --name EdgeFallDetection_x86 \
-    -v $APP_ROOT:/workspace/EdgeFallDetection \
+    --name PorterSpotter_x86 \
+    -v $APP_ROOT:/workspace/PorterSpotter \
     -v $SNPE_DIR:/workspace/snpe \
-    -w /workspace/EdgeFallDetection \
-    edgefalldetection/x86-64
+    -w /workspace/PorterSpotter \
+    porterspotter/x86-64

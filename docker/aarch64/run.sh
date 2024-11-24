@@ -1,6 +1,6 @@
 #!/bin/bash -eu
 
-# cd to EdgeObjectRecog root dir
+# cd to PorterSpotter root dir
 APP_ROOT=$(cd $(dirname $BASH_SOURCE)/../..; pwd)
 cd $APP_ROOT
 
@@ -29,10 +29,10 @@ echo "ANDROID_NDK_DIR=$ANDROID_NDK_DIR"
 echo "SNPE_DIR=$SNPE_DIR"
 
 docker run -it --rm \
-    --name EdgeFallDetection_aarch64 \
-    -v $APP_ROOT:/workspace/EdgeFallDetection \
+    --name PorterSpotter_aarch64 \
+    -v $APP_ROOT:/workspace/PorterSpotter \
     -v $APP_FW_ROOT:/workspace/SafieEdgeAppFramework \
     -v $ANDROID_NDK_DIR:/workspace/android_ndk \
     -v $SNPE_DIR:/workspace/snpe \
-    -w /workspace/EdgeFallDetection \
-    edgefalldetection/aarch64
+    -w /workspace/PorterSpotter \
+    porterspotter/aarch64

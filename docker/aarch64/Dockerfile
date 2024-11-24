@@ -36,7 +36,7 @@ COPY --from=toolchain_expander /usr/local/oecore-x86_64 /usr/local/oecore-x86_64
 
 # Set enviroment variables of sdks' root dirs.
 # SDKs will be mounted on these directories when executing run.sh.
-ENV APP_ROOT=/workspace/EdgePoseEstimation
+ENV APP_ROOT=/workspace/PorterSpotter
 ENV SNPE_ROOT=/workspace/snpe
 ENV ANDROID_NDK_ROOT=/workspace/android_ndk
 ENV APP_FW_ROOT=/workspace/SafieEdgeAppFramework
