@@ -12,7 +12,7 @@
 #include <opencv2/opencv.hpp>
 #include <string>
 
-#include "pose_estimation/RtmposeUtils.hpp"
+#include "pose_estimation/PoseUtils.hpp"
 
 
 /// @brief Bounding box in corner format

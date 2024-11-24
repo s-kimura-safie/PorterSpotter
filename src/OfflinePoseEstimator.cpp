@@ -14,13 +14,13 @@
 
 #include "DlSystem/DlError.hpp"
 #include "DlSystem/RuntimeList.hpp"
-#include "KeypointColorPalette.hpp"
 #include "SNPE/SNPEFactory.hpp"
 #include "Timer.hpp"
 #include "Types.hpp"
 #include "object_detection/Yolov5.hpp"
 #include "nlohmann/json.hpp"
 #include "pose_estimation/PoseEstimator.hpp"
+#include "VisualizationUtil.hpp"
 
 std::string getStem(const std::string &filePath)
 {
@@ -78,35 +78,6 @@ void split(std::vector<std::string> &output, const std::string &input, char deli
     while (std::getline(iss, item, delimiter))
     {
         output.push_back(item);
-    }
-}
-
-// キーポイントを画像に描画する関数
-void drawSkeleton(const std::vector<PosePoint> &points, cv::Mat &image)
-{
-    // 骨格を定義（キーポイントのインデックスペア）
-    const std::vector<std::pair<int, int>> skeleton = {{0, 1},   {0, 2},   {1, 3},   {2, 4},  {5, 6},  {5, 7},
-                                                       {7, 9},   {6, 8},   {8, 10},  {5, 11}, {6, 12}, {11, 12},
-                                                       {11, 13}, {13, 15}, {12, 14}, {14, 16}};
-    // キーポイントの大きさと色
-    const int radius = 10;
-    const std::vector<cv::Scalar> keypointColors = KeypointColorPalette::keypointColors;
-
-    // 骨格を描画
-    for (const auto &bone : skeleton)
-    {
-        const int startIdx = bone.first;
-        const int endIdx = bone.second;
-        const cv::Point startPoint = cv::Point(points[startIdx].x, points[startIdx].y);
-        const cv::Point endPoint = cv::Point(points[endIdx].x, points[endIdx].y);
-        cv::line(image, startPoint, endPoint, cv::Scalar(0, 0, 255), 2); // 赤色の線
-    }
-    // キーポイントを描画
-    for (size_t keyPointIdx = 0; keyPointIdx < points.size(); keyPointIdx++)
-    {
-        PosePoint point = points[keyPointIdx];
-        // # circle(画像, 中心座標, 半径, 色, 線幅, 連結)
-        cv::circle(image, cv::Point(point.x, point.y), radius, keypointColors[keyPointIdx], cv::FILLED);
     }
 }
 
@@ -304,17 +275,17 @@ int main(int argc, char **argv)
         // Pose Estimation
         std::cout << "Estimating pose..." << std::endl;
         std::vector<PosePoint> posePoints;
+        cv::Mat outputImage = inputImage.clone();
         for (const BboxXyxy &bbox : objectList)
         {
             t_poseEstimation.Start();
             posePoints = poseEstimator.Inference(inputImage, bbox);
             t_poseEstimation.End();
-
-            drawSkeleton(posePoints, inputImage);
+            visualization_util::drawSkeleton(posePoints, outputImage);
         }
 
         std::cout << "Pose estimation done" << std::endl;
-        cv::imwrite("outputs/" + getStem(inputFile) + ".jpg", inputImage);
+        cv::imwrite("outputs/" + getStem(inputFile) + ".jpg", outputImage);
     }
 
     std::cout << "# Detection: " << t_detection.Count() << ", Accumulated: " << t_detection.Accumulated()

@@ -9,6 +9,38 @@
 
 #include "Yolov5Util.hpp"
 
+struct DetectBox
+{
+	int left;
+	int top;
+	int right;
+	int bottom;
+	float score;
+	int label;
+
+	DetectBox()
+	{
+		left = -1;
+		top = -1;
+		right = -1;
+		bottom = -1;
+		score = -1.0;
+		label = -1;
+	}
+
+	bool IsValid() const
+	{
+		return left != -1 && top != -1 && right != -1 && bottom != -1 && score != -1.0 && label != -1;
+	}
+};
+
+static bool BoxCompare(
+	const DetectBox& a,
+	const DetectBox& b) {
+	return a.score > b.score;
+}
+
+
 void Yolov5Util::resize(const cv::Mat &input, const cv::Size &target_shape, cv::Mat &output, float &scale, cv::Vec2i &delta)
 {
     const int w_input = input.cols;

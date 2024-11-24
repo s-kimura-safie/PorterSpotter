@@ -11,7 +11,7 @@
 #include "DlSystem/RuntimeList.hpp"
 #include "SNPE/SNPE.hpp"
 #include <opencv2/opencv.hpp>
-#include "pose_estimation/RtmposeUtils.hpp"
+#include "pose_estimation/PoseUtils.hpp"
 #include "Types.hpp"
 
 using SequentialPoseKeypoints = std::deque<std::vector<PosePoint>>;

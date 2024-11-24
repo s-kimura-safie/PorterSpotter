@@ -1,41 +1,11 @@
 #ifndef _RTM_POSE_UTILS_H_
 #define _RTM_POSE_UTILS_H_
 
+#pragma once
 #include "opencv2/opencv.hpp"
 
 const std::vector<float> IMAGE_MEAN{ 123.675, 116.28, 103.53 };
 const std::vector<float> IMAGE_STD{ 58.395, 57.12, 57.375 };
-
-struct DetectBox
-{
-	int left;
-	int top;
-	int right;
-	int bottom;
-	float score;
-	int label;
-
-	DetectBox()
-	{
-		left = -1;
-		top = -1;
-		right = -1;
-		bottom = -1;
-		score = -1.0;
-		label = -1;
-	}
-
-	bool IsValid() const
-	{
-		return left != -1 && top != -1 && right != -1 && bottom != -1 && score != -1.0 && label != -1;
-	}
-};
-
-static bool BoxCompare(
-	const DetectBox& a,
-	const DetectBox& b) {
-	return a.score > b.score;
-}
 
 struct PosePoint
 {
