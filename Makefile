@@ -66,8 +66,8 @@ OBJ_DIR			:= $(OBJ_ROOT)/$(TARGET)
 # For standalone cpp files
 SA_SRC_DIR      := $(CURDIR)/src
 SA_SRCS         := $(wildcard $(SA_SRC_DIR)/*.cpp) \
-                    $(wildcard $(SA_SRC_DIR)/detection/*.cpp) \
                     $(wildcard $(SA_SRC_DIR)/hold_detecion/*.cpp) \
+                    $(wildcard $(SA_SRC_DIR)/object_detection/*.cpp) \
 					$(wildcard $(SA_SRC_DIR)/pipeline/*.cpp) \
                     $(wildcard $(SA_SRC_DIR)/pose_estimation/*.cpp) \
                     $(wildcard $(SA_SRC_DIR)/tracking/*.cpp)
