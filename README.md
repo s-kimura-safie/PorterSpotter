@@ -1,4 +1,5 @@
-# EdgeFallDetection
+# Porter Spotter
+
 ## 概要
 人物が特定のものを運んでいることを検知するアプリケーションです。
 
@@ -21,17 +22,17 @@ EVKを使う場合、[OpenCVライブラリ](https://drive.google.com/drive/fold
 
 ### ビルド (x86)
 以下のコマンドでDockerイメージを作成します。
-```
+```bash
 ./docker/x86-64/build.sh
 ```
 
 次のコマンドでdocker環境に入ります。
-```
+```bash
 ./docker/x86-64/run.sh
 ```
 
 Docker環境で以下を実行します。
-```
+```bash
 make
 ```
 
