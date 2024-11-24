@@ -79,6 +79,19 @@ void visualization_util::DrawLabel(cv::Mat &image, cv::Point2i point, const std:
     }
 }
 
+int calcBodyLength(const std::vector<PosePoint> &points)
+{
+    // Keypoints : https://github.com/open-mmlab/mmpose/tree/1.x/projects/rtmpose#body-2d
+    const PosePoint &point6 = points[6];
+    const PosePoint &point12 = points[12];
+    double distanceLeft = std::sqrt(std::pow(point12.x - point6.x, 2) + std::pow(point12.y - point6.y, 2));
+    const PosePoint &point5 = points[5];
+    const PosePoint &point11 = points[11];
+    double distanceRight = std::sqrt(std::pow(point11.x - point5.x, 2) + std::pow(point11.y - point5.y, 2));
+    double bodyLength = std::max(distanceLeft, distanceRight);
+    return bodyLength;
+}
+
 // キーポイントを入力し、画像に描画する関数
 void visualization_util::drawSkeleton(const std::vector<PosePoint> &points, cv::Mat &image)
 {
@@ -86,24 +99,31 @@ void visualization_util::drawSkeleton(const std::vector<PosePoint> &points, cv::
     const std::vector<std::pair<int, int>> skeleton = {{0, 1},   {0, 2},   {1, 3},   {2, 4},  {5, 6},  {5, 7},
                                                        {7, 9},   {6, 8},   {8, 10},  {5, 11}, {6, 12}, {11, 12},
                                                        {11, 13}, {13, 15}, {12, 14}, {14, 16}};
-    // キーポイントの大きさと色
+
+    // 画像サイズ
+    int width = image.cols;
+    int height = image.rows;
+
+    // キーポイントの大きさと骨線の太さ
+    // double bodyLength = calcBodyLength(points); // FIXME:BBOXに応じて大きさを変える
     const int radius = 10;
+    const int thickness = 3;
 
     // 骨格を描画
     for (const auto &bone : skeleton)
     {
         const int startIdx = bone.first;
         const int endIdx = bone.second;
-        const cv::Point startPoint = cv::Point(points[startIdx].x, points[startIdx].y);
-        const cv::Point endPoint = cv::Point(points[endIdx].x, points[endIdx].y);
-        cv::line(image, startPoint, endPoint, cv::Scalar(0, 0, 255), 2); // 赤色の線
+        const cv::Point startPoint = cv::Point(points[startIdx].x * width, points[startIdx].y * height);
+        const cv::Point endPoint = cv::Point(points[endIdx].x * width, points[endIdx].y * height);
+        cv::line(image, startPoint, endPoint, cv::Scalar(0, 0, 255), thickness); // 赤色の線
     }
     // キーポイントを描画
     for (size_t keyPointIdx = 0; keyPointIdx < points.size(); keyPointIdx++)
     {
         PosePoint point = points[keyPointIdx];
         // # circle(画像, 中心座標, 半径, 色, 線幅, 連結)
-        cv::circle(image, cv::Point(point.x, point.y), radius, keypointColors[keyPointIdx], cv::FILLED);
+        cv::circle(image, cv::Point(point.x * width, point.y * height), radius, keypointColors[keyPointIdx], cv::FILLED);
     }
 }
 

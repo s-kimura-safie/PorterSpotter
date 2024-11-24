@@ -8,6 +8,7 @@
  */
 
 #pragma once
+#include <algorithm>
 #include "MathUtil.hpp"
 #include "Types.hpp"
 #include "pose_estimation/PoseUtils.hpp"
