@@ -107,7 +107,7 @@ static void decodeOutput(const zdl::DlSystem::TensorMap &outputTensorMap,
     std::vector<int> conf_shape = output_shape[1];
 
     // save shape into yolov8 format (rows & column)
-    const int num_class = 4;
+    const int num_class = 80;
     int num_ele_per_row = 4 + num_class; // 4 for bounding box coordinates x,y,w,h
     int num_rows = anchor_shape[2];
 
@@ -118,6 +118,9 @@ static void decodeOutput(const zdl::DlSystem::TensorMap &outputTensorMap,
     std::shared_ptr<float[]> raw_conf_result = output_result[1];
     std::vector<float> conf_result(raw_conf_result.get(), raw_conf_result.get() + num_ele_per_row * num_rows);
 
+    // 検出対象のクラスIDを定義
+    const std::vector<int> target_class_ids = {0, 67};
+
     for (int row = 0; row < num_rows; ++row)
     {
         std::vector<float> row_data;
@@ -125,21 +128,22 @@ static void decodeOutput(const zdl::DlSystem::TensorMap &outputTensorMap,
         for (int ele = 0; ele < 4; ++ele)
         {
             row_data.push_back(anchor_result[ele * num_rows + row]);
-            // std::cout << anchor_result[row * 4 + ele] << " ";
         }
         // Add elements from conf_result
         for (int ele = 0; ele < num_class; ++ele)
         {
             row_data.push_back(conf_result[ele * num_rows + row]);
-            // std::cout << conf_result[row * num_class + ele] << " ";
         }
-        // std::cout << std::endl;
 
         const int max_ele = (int)std::distance(row_data.begin() + 4, std::max_element(row_data.begin() + 4, row_data.end()));
         float max_score = row_data[max_ele + 4];
 
-        const std::vector<float> score_threshold_list = {0.25, 0.25, 0.25, 0.5};
-        if (max_score >= score_threshold_list[max_ele])
+        // 対象クラスIDかどうかをチェック
+        bool is_target_class =
+            std::find(target_class_ids.begin(), target_class_ids.end(), max_ele) != target_class_ids.end();
+
+        const std::vector<float> score_threshold_list = {0.25, 0.25};
+        if (max_score >= score_threshold_list[max_ele] && is_target_class) // 条件追加
         {
             float x = row_data[0];
             float y = row_data[1];
@@ -214,33 +218,6 @@ static void filterBySize(std::vector<Yolov8::BoundingBox> &input_boxes, const in
     }
 }
 
-static void unifyChildAdult(const std::vector<std::vector<Yolov8::BoundingBox>> &input,
-                            std::vector<std::vector<Yolov8::BoundingBox>> &result)
-{
-    result.resize(3);
-    for (int classIdx = 0; classIdx < (int)input.size(); ++classIdx)
-    {
-        for (int boxIdx = 0; boxIdx < (int)input[classIdx].size(); ++boxIdx)
-        {
-            const int headIdx = 2;
-            const int faceIdx = 3;
-            const Yolov8::BoundingBox &box = input[classIdx][boxIdx];
-            if (classIdx != headIdx && classIdx != faceIdx)
-            {
-                result[0].push_back(box); // Person
-            }
-            else if (classIdx == headIdx)
-            {
-                result[1].push_back(box); // Head
-            }
-            else if (classIdx == faceIdx)
-            {
-                result[2].push_back(box); // Face
-            }
-        }
-    }
-}
-
 void Yolov8::preprocess(const cv::Mat &img, cv::Mat &processed)
 {
     // resize by keeping aspect ratio
@@ -248,7 +225,7 @@ void Yolov8::preprocess(const cv::Mat &img, cv::Mat &processed)
     const int image_width = img.cols;
 
     const int model_input_width = 640;
-    const int model_input_height = 384;
+    const int model_input_height = 640;
     ratio = std::min(1.0f * (float)model_input_width / (float)image_width,
                      1.0f * (float)model_input_height / (float)image_height);
 
@@ -281,11 +258,11 @@ void Yolov8::preprocess(const cv::Mat &img, cv::Mat &processed)
 
 void Yolov8::postprocess(const std::vector<std::vector<BoundingBox>> &input, std::vector<std::vector<BboxXyxy>> &result)
 {
-    std::vector<std::vector<BoundingBox>> processed;
-    unifyChildAdult(input, processed);
+    std::vector<std::vector<BoundingBox>> processed = input;
+    // unifyChildAdult(input, processed);
 
     // NMSの適用と座標のスケーリング
-    const Vecd ious = {0.35, 0.35, 0.35};
+    const Vecd ious = {0.35, 0.35};
     for (int classIdx = 0; classIdx < (int)processed.size(); classIdx++)
     {
         nms(processed[classIdx], ious[classIdx]);
@@ -338,7 +315,7 @@ bool Yolov8::CreateNetwork(const uint8_t *buffer, const size_t size, const std::
     outputTensorNames.append("/model.22/Mul_2");
     outputTensorNames.append("/model.22/Sigmoid");
 
-    std::unique_ptr<zdl::DlContainer::IDlContainer> container = snpe_util::loadContainerFromBuffer(buffer, size);
+    std::unique_ptr<zdl::DlContainer::IDlContainer> container = SnpeUtil::loadContainerFromBuffer(buffer, size);
     zdl::SNPE::SNPEBuilder snpeBuilder(container.get());
     network = snpeBuilder.setOutputLayers(outputTensorNames)
                   .setRuntimeProcessorOrder(runtimeList)
@@ -359,15 +336,16 @@ bool Yolov8::Infer(const cv::Mat &image, std::vector<std::vector<BboxXyxy>> &res
 {
     cv::Mat processed;
     preprocess(image, processed);
+    std::cout << "Preprocess done" << std::endl;
 
-    std::unique_ptr<zdl::DlSystem::ITensor> inputTensor = snpe_util::loadInputTensor(network, processed);
+    std::unique_ptr<zdl::DlSystem::ITensor> inputTensor = SnpeUtil::loadInputTensor(network, processed);
     zdl::DlSystem::TensorMap outputTensorMap;
     network->execute(inputTensor.get(), outputTensorMap);
+    std::cout << "Inference done" << std::endl;
 
-    const int num_class = 4;
-    std::vector<std::vector<BoundingBox>> decoded(num_class);
+    std::vector<std::vector<BoundingBox>> decoded(80);
     decodeOutput(outputTensorMap, decoded);
-
     postprocess(decoded, result);
+    std::cout << "Postprocess done" << std::endl;
     return true;
 }

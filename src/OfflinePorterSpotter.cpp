@@ -25,14 +25,12 @@
 #include "Timer.hpp"
 #include "Types.hpp"
 #include "VisualizationUtil.hpp"
-#include "object_detection/Yolov5.hpp"
 #include "pipeline/PorterSpotter.hpp"
-#include "pose_estimation/PoseEstimator.hpp"
 
 // Define and parser command line arguments
 DEFINE_string(d, "./models/yolov5s_exp19_new_quantized.dlc", "Path to detection model DLC file");
 DEFINE_string(h, "./models/rtmpose.dlc", "Path to pose estimation model DLC file");
-DEFINE_string(input_file, "videos/sample.mp4", "Path to input video file. e.g. sample.mp4");
+DEFINE_string(input_files, "images/*jpg", "Path to input video file. e.g. sample.mp4");
 DEFINE_string(output_dir, "outputs", "Path to output dir");
 DEFINE_bool(person_box, false, "Draw person bbox in video");
 DEFINE_bool(skeleton, false, "Draw skeleton in video");
@@ -102,8 +100,8 @@ void writeTrack(std::ofstream &trackOfs, const std::vector<TrackedBbox> &tracks)
     }
 }
 
-bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const bool isDrawPersonBbox,
-                  const bool isDrawSkeleton, cv::Mat outImage)
+bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const bool isDrawPersonBbox, const bool isDrawSkeleton,
+                  cv::Mat outImage)
 {
 
     cv::Mat rgbImage;
@@ -128,10 +126,15 @@ bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const bool isDra
 }
 
 bool analizeImage(PorterSpotter &porterSpotter, const std::string &directoryPath, const std::string &outDir,
-                      const bool isDrawPersonBbox, const bool isDrawSkeleton)
+                  const bool isDrawPersonBbox, const bool isDrawSkeleton)
 {
     // Get images from path
     std::vector<std::string> inputFiles = getAllFiles(directoryPath);
+    if (inputFiles.empty())
+    {
+        std::cout << "No image files in the directory: " << directoryPath << std::endl;
+        return false;
+    }
 
     std::cout << "Running network..." << std::endl;
 
@@ -178,7 +181,7 @@ bool initModel(PorterSpotter &porterSpotter, const std::string &modelType, const
     {
         if (!porterSpotter.InitializeDetection((const uint8_t *)dlcBuff.data(), fileSize, runtimes))
         {
-            std::cout << "Couldn't create network instance." << std::endl;
+            std::cout << "Couldn't create detecter." << std::endl;
             return false;
         }
     }
@@ -186,7 +189,7 @@ bool initModel(PorterSpotter &porterSpotter, const std::string &modelType, const
     {
         if (!porterSpotter.InitializePoseEstimator((const uint8_t *)dlcBuff.data(), fileSize, runtimes))
         {
-            std::cout << "Couldn't create network instance." << std::endl;
+            std::cout << "Couldn't create pose estimator." << std::endl;
             return false;
         }
     }
@@ -195,7 +198,6 @@ bool initModel(PorterSpotter &porterSpotter, const std::string &modelType, const
         std::cout << "Invalid model type: " << modelType << std::endl;
         return false;
     }
-    std::cout << "Network initialized" << std::endl;
 
     return true;
 }
@@ -216,12 +218,12 @@ int main(int argc, char **argv)
     }
     if (!initModel(porterSpotter, modelType2, FLAGS_h, runtimes))
     {
-        std::cout << "Failed to initialize opse estimation model" << std::endl;
+        std::cout << "Failed to initialize pose estimation model" << std::endl;
         return false;
     }
 
     // Run analysis
-    if (analizeImage(porterSpotter, FLAGS_input_file, FLAGS_output_dir, FLAGS_person_box, FLAGS_skeleton))
+    if (analizeImage(porterSpotter, FLAGS_input_files, FLAGS_output_dir, FLAGS_person_box, FLAGS_skeleton))
     {
         return EXIT_SUCCESS;
     }

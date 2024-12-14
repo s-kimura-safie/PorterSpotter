@@ -49,19 +49,20 @@ bool PorterSpotter::InitializePoseEstimator(const uint8_t *buffer, const size_t 
     }
 }
 
-void PorterSpotter::ResetTracker()
-{
-    byte.Reset();
-}
+void PorterSpotter::ResetTracker() { byte.Reset(); }
 
 void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &tracks)
 {
+    std::cout << "Start Porter Spotter" << std::endl;
     // detection
-    std::vector<BboxXyxy> detectedObjects;
-    yolov8.Detect(rgbImage, detectedObjects);
+    std::vector<std::vector<BboxXyxy>> multiclassDetections;
+
+    yolov8.Infer(rgbImage, multiclassDetections);
+    std::cout << "size:" << multiclassDetections.size() << std::endl;
 
     // tracking
-    byte.Exec(detectedObjects, tracks);
+    const std::vector<BboxXyxy>& personDetections = multiclassDetections[0];
+    byte.Exec(personDetections, tracks);
 
     // pose estimation
     poseEstimator.Exec(rgbImage, tracks);
@@ -69,6 +70,7 @@ void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &track
     // action recognition
     for (TrackedBbox &track : tracks)
     {
+        const std::vector<BboxXyxy>& objectDetections = multiclassDetections[1];
         // hold detection
     }
 }
