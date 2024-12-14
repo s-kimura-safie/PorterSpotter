@@ -12,7 +12,7 @@
 #include <iostream>
 #include <string>
 
-#include "object_detection/Yolov5.hpp"
+#include "object_detection/Yolov8.hpp"
 #include "pose_estimation/PoseEstimator.hpp"
 #include "tracking/Byte.hpp"
 
@@ -20,7 +20,7 @@
 class PorterSpotter
 {
 private:
-    Yolov5 yolov5;
+    Yolov8 yolov8;
     Byte byte;
     PoseEstimator poseEstimator;
 

@@ -24,7 +24,7 @@ PorterSpotter::~PorterSpotter() {}
 
 bool PorterSpotter::InitializeDetection(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes)
 {
-    if (yolov5.CreateNetwork(buffer, size, runtimes))
+    if (yolov8.CreateNetwork(buffer, size, runtimes))
     {
         isDetectionModelReady = true;
         return true;
@@ -58,7 +58,7 @@ void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &track
 {
     // detection
     std::vector<BboxXyxy> detectedObjects;
-    yolov5.Detect(rgbImage, detectedObjects);
+    yolov8.Detect(rgbImage, detectedObjects);
 
     // tracking
     byte.Exec(detectedObjects, tracks);
