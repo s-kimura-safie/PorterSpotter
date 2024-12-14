@@ -36,7 +36,6 @@ DEFINE_string(input_file, "videos/sample.mp4", "Path to input video file. e.g. s
 DEFINE_string(output_dir, "outputs", "Path to output dir");
 DEFINE_bool(person_box, false, "Draw person bbox in video");
 DEFINE_bool(skeleton, false, "Draw skeleton in video");
-DEFINE_bool(txt, false, "Save track as txt");
 
 std::string getStem(const std::string &filePath)
 {
@@ -103,8 +102,8 @@ void writeTrack(std::ofstream &trackOfs, const std::vector<TrackedBbox> &tracks)
     }
 }
 
-bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, std::ofstream &outputTrackers, const bool isDrawPersonBbox,
-                  const bool isDrawSkeleton, const bool isSaveTxt, cv::Mat outImage)
+bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const bool isDrawPersonBbox,
+                  const bool isDrawSkeleton, cv::Mat outImage)
 {
 
     cv::Mat rgbImage;
@@ -113,7 +112,6 @@ bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, std::ofstream &o
     std::vector<TrackedBbox> tracks;
     porterSpotter.Run(rgbImage, tracks);
 
-    if (isSaveTxt) writeTrack(outputTrackers, tracks);
     if (isDrawSkeleton) visualization_util::drawTracksSkeleton(tracks, outImage);
     if (isDrawPersonBbox) visualization_util::drawPersonBbox(tracks, outImage);
 
@@ -129,8 +127,8 @@ bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, std::ofstream &o
     return true;
 }
 
-bool runImageAnalysis(PorterSpotter &porterSpotter, const std::string &directoryPath, const std::string &outDir,
-                      const bool isDrawPersonBbox, const bool isDrawSkeleton, const bool isSaveTxt)
+bool analizeImage(PorterSpotter &porterSpotter, const std::string &directoryPath, const std::string &outDir,
+                      const bool isDrawPersonBbox, const bool isDrawSkeleton)
 {
     // Get images from path
     std::vector<std::string> inputFiles = getAllFiles(directoryPath);
@@ -141,15 +139,12 @@ bool runImageAnalysis(PorterSpotter &porterSpotter, const std::string &directory
     {
         cv::Mat inputImage = cv::imread(inputFile);
         cv::Mat outImage = inputImage.clone();
-        std::ofstream outputTrackers;
         std::string outputImageFile = outDir + "/" + getStem(inputFile) + "_output.jpg";
-        if (isSaveTxt) outputTrackers.open(outDir + "/" + getStem(inputFile) + "output_trackers.txt", std::ios_base::out);
 
         // inputImage is BGR order
-        processFrame(porterSpotter, inputImage, outputTrackers, isDrawPersonBbox, isDrawSkeleton, isSaveTxt, outImage);
+        processFrame(porterSpotter, inputImage, isDrawPersonBbox, isDrawSkeleton, outImage);
         cv::imwrite(outputImageFile, outImage);
         porterSpotter.ResetTracker(); //画像が連続の場合はコメントアウト
-        outputTrackers.close();
     }
 
     return true;
@@ -213,7 +208,6 @@ int main(int argc, char **argv)
     PorterSpotter porterSpotter;
     std::string modelType1 = "detection";
     std::string modelType2 = "pose";
-    std::string modelType3 = "action";
     const std::vector<std::string> runtimes = {"cpu"};
     if (!initModel(porterSpotter, modelType1, FLAGS_d, runtimes))
     {
@@ -227,7 +221,7 @@ int main(int argc, char **argv)
     }
 
     // Run analysis
-    if (runImageAnalysis(porterSpotter, FLAGS_input_file, FLAGS_output_dir, FLAGS_person_box, FLAGS_skeleton, FLAGS_txt))
+    if (analizeImage(porterSpotter, FLAGS_input_file, FLAGS_output_dir, FLAGS_person_box, FLAGS_skeleton))
     {
         return EXIT_SUCCESS;
     }
