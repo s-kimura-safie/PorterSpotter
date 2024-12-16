@@ -15,17 +15,20 @@ void checkObjectHolding(std::vector<TrackedBbox> &tracks, std::vector<BboxXyxy> 
     for (TrackedBbox &track : tracks)
     {
         PosePoint rightHandPoint = track.poseKeypoints[5]; // 右手
-        PosePoint leftHandPoint = track.poseKeypoints[6]; // 左手
-        
+        PosePoint leftHandPoint = track.poseKeypoints[6];  // 左手
+
         for (BboxXyxy &objectDetection : objectDetections)
         {
             double objectCenterX = (objectDetection.x0 + objectDetection.x1) / 2;
             double objectCenterY = (objectDetection.y0 + objectDetection.y1) / 2;
-            double distanceFromRight = sqrt(pow(rightHandPoint.x - objectCenterX, 2) + pow(rightHandPoint.y - objectCenterY, 2));
-            double distanceFromLeft = sqrt(pow(leftHandPoint.x - objectCenterX, 2) + pow(leftHandPoint.y - objectCenterY, 2));
-            
+            double distanceFromRight =
+                sqrt(pow(rightHandPoint.x - objectCenterX, 2) + pow(rightHandPoint.y - objectCenterY, 2));
+            double distanceFromLeft =
+                sqrt(pow(leftHandPoint.x - objectCenterX, 2) + pow(leftHandPoint.y - objectCenterY, 2));
+
             double distance = std::min(distanceFromRight, distanceFromLeft);
-            if (distance < 0.1)
+            double distanceThreshold = (track.bodyBbox.x1 - track.bodyBbox.x0) / 2;
+            if (distance < distanceThreshold)
             {
                 track.isHoldingObject = true;
                 break;
