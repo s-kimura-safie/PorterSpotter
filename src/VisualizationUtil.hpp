@@ -31,4 +31,5 @@ namespace visualization_util
 
     // 人物のバウンディングボックスを描画する関数
     void drawPersonBbox(const std::vector<TrackedBbox> &tracks, cv::Mat &image);
+    void drawObjectBbox(const std::vector<BboxXyxy> &objectDetections, cv::Mat &image);
 }

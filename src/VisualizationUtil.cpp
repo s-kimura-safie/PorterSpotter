@@ -137,7 +137,8 @@ void visualization_util::drawTracksSkeleton(const std::vector<TrackedBbox> &trac
     //                                                    {7, 9},   {6, 8},   {8, 10},  {5, 11}, {6, 12}, {11, 12},
     //                                                    {11, 13}, {13, 15}, {12, 14}, {14, 16}};
     // キーポイントの大きさと色
-    const int radius = 4;
+    const int radius = 5;
+    const int thickness = 2;
 
     for (const TrackedBbox &track : tracks)
     {
@@ -151,7 +152,7 @@ void visualization_util::drawTracksSkeleton(const std::vector<TrackedBbox> &trac
                                                    static_cast<int>(points[startIdx].y * image.rows));
             const cv::Point endPoint =
                 cv::Point(static_cast<int>(points[endIdx].x * image.cols), static_cast<int>(points[endIdx].y * image.rows));
-            cv::line(image, startPoint, endPoint, cv::Scalar(0, 0, 255), 2); // 赤色の線
+            cv::line(image, startPoint, endPoint, cv::Scalar(255, 0, 0), thickness);
         }
         // キーポイントを描画
         for (size_t keyPointIdx = 0; keyPointIdx < points.size(); keyPointIdx++)
@@ -170,18 +171,37 @@ void visualization_util::drawPersonBbox(const std::vector<TrackedBbox> &tracks, 
     {
         const TrackedBbox &trackedBbox = tracks[i];
 
-        const int colorIdx = (int)trackedBbox.id % 80;
-        cv::Scalar color =
-            cv::Scalar(visualization_util::color_list[colorIdx][0], visualization_util::color_list[colorIdx][1],
-                       visualization_util::color_list[colorIdx][2]);
+        cv::Scalar color = cv::Scalar(0, 255, 0); // pink
+        int thickness = 4;
+        std::string text = "ID: " + std::to_string(trackedBbox.id);
+        if (trackedBbox.isHoldingObject) // 物体を持っている場合は赤色で描画
+        {
+            color = cv::Scalar(0, 0, 255); // 赤色
+            thickness = 12;
+            text = "ID: " + std::to_string(trackedBbox.id) + " (Porter)";
+        }
 
         const int personX0 = MathUtil::Clamp<int>(image.cols * trackedBbox.bodyBbox.x0, 0, image.cols - 1);
         const int personY0 = MathUtil::Clamp<int>(image.rows * trackedBbox.bodyBbox.y0, 0, image.rows - 1);
         const int personX1 = MathUtil::Clamp<int>(image.cols * trackedBbox.bodyBbox.x1, 0, image.cols - 1);
         const int personY1 = MathUtil::Clamp<int>(image.rows * trackedBbox.bodyBbox.y1, 0, image.rows - 1);
         cv::Rect personRect = cv::Rect(cv::Point2i(personX0, personY0), cv::Point2i(personX1, personY1));
-        cv::rectangle(image, personRect, color * 255, 2);
+        cv::rectangle(image, personRect, color, thickness);
+        cv::putText(image, text, cv::Point(personX0, personY0 - 10), cv::FONT_HERSHEY_SIMPLEX, 1.5, color, 3);
+    }
+}
 
-        cv::putText(image, trackedBbox.action, cv::Point(personX0, personY0 - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 2);
+void visualization_util::drawObjectBbox(const std::vector<BboxXyxy> &objectDetections, cv::Mat &image)
+{
+    for (BboxXyxy objectDetection : objectDetections)
+    {
+        cv::Scalar color = cv::Scalar(0, 0, 255); // 赤色
+
+        const int objectX0 = MathUtil::Clamp<int>(image.cols * objectDetection.x0, 0, image.cols - 1);
+        const int objectY0 = MathUtil::Clamp<int>(image.rows * objectDetection.y0, 0, image.rows - 1);
+        const int objectX1 = MathUtil::Clamp<int>(image.cols * objectDetection.x1, 0, image.cols - 1);
+        const int objectY1 = MathUtil::Clamp<int>(image.rows * objectDetection.y1, 0, image.rows - 1);
+        cv::Rect objectRect = cv::Rect(cv::Point2i(objectX0, objectY0), cv::Point2i(objectX1, objectY1));
+        cv::rectangle(image, objectRect, color, 4);
     }
 }
