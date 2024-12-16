@@ -14,6 +14,8 @@
 
 #include "pose_estimation/PoseUtils.hpp"
 
+using Vecd = std::vector<double>;
+
 /// @brief Bounding box in corner format
 struct BboxXyxy
 {
@@ -48,7 +50,7 @@ struct TrackedBbox
     BboxXyxy bodyBbox;
     bool isBodyDetected{false}; // トラッカーの推定値が検出結果と関連付けされているとき true
     std::vector<PosePoint> poseKeypoints;
-    std::string action;
+    bool isHoldingObject{false}; // 人物が物体を持っているかどうか
 
     TrackedBbox() : id(0), velocity(0, 0), bodyBbox(0.0, 0.0, 0.0, 0.0){};
     // TODO: double id -> unsigned int id
