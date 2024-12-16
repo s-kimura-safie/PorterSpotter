@@ -35,5 +35,5 @@ public:
     bool InitializePoseEstimator(const uint8_t *buffer, const size_t size, const std::vector<std::string> &runtimes);
     void ResetTracker();
 
-    void Run(const cv::Mat &image, std::vector<TrackedBbox> &tracks);
+    void Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &tracks, std::vector<BboxXyxy> &objectDetections);
 };

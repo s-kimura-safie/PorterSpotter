@@ -119,7 +119,9 @@ static void decodeOutput(const zdl::DlSystem::TensorMap &outputTensorMap,
     std::vector<float> conf_result(raw_conf_result.get(), raw_conf_result.get() + num_ele_per_row * num_rows);
 
     // 検出対象のクラスIDを定義
-    const std::vector<int> target_class_ids = {0, 67};
+    const std::vector<int> targetClassIds = {0, 67}; // 0: person, 39: bottle, 67: cell phone
+    const std::map<int, float> scoreThresholdMap = {{targetClassIds[0], 0.25}, {targetClassIds[1], 0.015}};
+    const std::map<int, int> objectIndexMap = {{targetClassIds[0], 0}, {targetClassIds[1], 1}};
 
     for (int row = 0; row < num_rows; ++row)
     {
@@ -139,11 +141,11 @@ static void decodeOutput(const zdl::DlSystem::TensorMap &outputTensorMap,
         float max_score = row_data[max_ele + 4];
 
         // 対象クラスIDかどうかをチェック
-        bool is_target_class =
-            std::find(target_class_ids.begin(), target_class_ids.end(), max_ele) != target_class_ids.end();
+        bool is_target_class = std::find(targetClassIds.begin(), targetClassIds.end(), max_ele) != targetClassIds.end();
+        if (!is_target_class) continue;
 
-        const std::vector<float> score_threshold_list = {0.25, 0.25};
-        if (max_score >= score_threshold_list[max_ele] && is_target_class) // 条件追加
+        // スコアの閾値を設定
+        if (max_score >= scoreThresholdMap.at(max_ele)) // 条件追加
         {
             float x = row_data[0];
             float y = row_data[1];
@@ -156,7 +158,7 @@ static void decodeOutput(const zdl::DlSystem::TensorMap &outputTensorMap,
             float height = h;
 
             Yolov8::BoundingBox box(left, top, width, height, max_score, max_ele);
-            decoded[max_ele].push_back(box);
+            decoded[objectIndexMap.at(max_ele)].push_back(box);
         }
     }
 }
@@ -221,9 +223,6 @@ static void filterBySize(std::vector<Yolov8::BoundingBox> &input_boxes, const in
 void Yolov8::preprocess(const cv::Mat &img, cv::Mat &processed)
 {
     // resize by keeping aspect ratio
-    const int image_height = img.rows;
-    const int image_width = img.cols;
-
     const int model_input_width = 640;
     const int model_input_height = 640;
     ratio = std::min(1.0f * (float)model_input_width / (float)image_width,
@@ -262,7 +261,7 @@ void Yolov8::postprocess(const std::vector<std::vector<BoundingBox>> &input, std
     // unifyChildAdult(input, processed);
 
     // NMSの適用と座標のスケーリング
-    const Vecd ious = {0.35, 0.35};
+    const Vecd ious = {0.35, 0.10};
     for (int classIdx = 0; classIdx < (int)processed.size(); classIdx++)
     {
         nms(processed[classIdx], ious[classIdx]);
@@ -285,7 +284,8 @@ void Yolov8::postprocess(const std::vector<std::vector<BoundingBox>> &input, std
         for (size_t boxIdx = 0; boxIdx < processed[classIdx].size(); boxIdx++)
         {
             const BoundingBox &box = processed[classIdx][boxIdx];
-            result[classIdx].push_back(BboxXyxy(box.x1, box.y1, box.x2, box.y2, box.score));
+            result[classIdx].push_back(BboxXyxy(box.x1 / image_width, box.y1 / image_height, box.x2 / image_width,
+                                                box.y2 / image_height, box.score));
         }
     }
 }
@@ -334,6 +334,9 @@ bool Yolov8::CreateNetwork(const uint8_t *buffer, const size_t size, const std::
 
 bool Yolov8::Infer(const cv::Mat &image, std::vector<std::vector<BboxXyxy>> &result)
 {
+    image_width = image.cols;
+    image_height = image.rows;
+
     cv::Mat processed;
     preprocess(image, processed);
     std::cout << "Preprocess done" << std::endl;

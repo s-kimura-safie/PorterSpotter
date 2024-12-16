@@ -28,11 +28,12 @@
 #include "pipeline/PorterSpotter.hpp"
 
 // Define and parser command line arguments
-DEFINE_string(d, "./models/yolov5s_exp19_new_quantized.dlc", "Path to detection model DLC file");
-DEFINE_string(h, "./models/rtmpose.dlc", "Path to pose estimation model DLC file");
-DEFINE_string(input_files, "images/*jpg", "Path to input video file. e.g. sample.mp4");
+DEFINE_string(d, "./models/yolov8s.dlc", "Path to detection model DLC file");
+DEFINE_string(p, "./models/rtmpose.dlc", "Path to pose estimation model DLC file");
+DEFINE_string(input_dir, "images", "Path to input video file. e.g. sample.mp4");
 DEFINE_string(output_dir, "outputs", "Path to output dir");
 DEFINE_bool(person_box, false, "Draw person bbox in video");
+DEFINE_bool(object_box, false, "Draw person bbox in video");
 DEFINE_bool(skeleton, false, "Draw skeleton in video");
 
 std::string getStem(const std::string &filePath)
@@ -100,33 +101,18 @@ void writeTrack(std::ofstream &trackOfs, const std::vector<TrackedBbox> &tracks)
     }
 }
 
-bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, const bool isDrawPersonBbox, const bool isDrawSkeleton,
-                  cv::Mat outImage)
+bool processFrame(PorterSpotter &porterSpotter, cv::Mat &image, std::vector<TrackedBbox> &tracks,
+                  std::vector<BboxXyxy> &objectDetections)
 {
-
     cv::Mat rgbImage;
     cv::cvtColor(image, rgbImage, cv::COLOR_BGR2RGB);
-
-    std::vector<TrackedBbox> tracks;
-    porterSpotter.Run(rgbImage, tracks);
-
-    if (isDrawSkeleton) visualization_util::drawTracksSkeleton(tracks, outImage);
-    if (isDrawPersonBbox) visualization_util::drawPersonBbox(tracks, outImage);
-
-    for (const TrackedBbox &track : tracks)
-    {
-        // std::cout << "Frame: " << frameCnt << "," << utcMsec << "," << track.id  << std::endl;
-        // for (const PosePoint &point : track.poseKeypoints)
-        // {
-        //     std::cout << point.x << "," << point.y << ",";
-        // }
-    }
+    porterSpotter.Run(rgbImage, tracks, objectDetections);
 
     return true;
 }
 
 bool analizeImage(PorterSpotter &porterSpotter, const std::string &directoryPath, const std::string &outDir,
-                  const bool isDrawPersonBbox, const bool isDrawSkeleton)
+                  const bool isDrawPersonBbox, const bool isDrawObjectBbox, const bool isDrawSkeleton)
 {
     // Get images from path
     std::vector<std::string> inputFiles = getAllFiles(directoryPath);
@@ -140,13 +126,23 @@ bool analizeImage(PorterSpotter &porterSpotter, const std::string &directoryPath
 
     for (const std::string &inputFile : inputFiles)
     {
-        cv::Mat inputImage = cv::imread(inputFile);
-        cv::Mat outImage = inputImage.clone();
-        std::string outputImageFile = outDir + "/" + getStem(inputFile) + "_output.jpg";
-
+        std::cout << "Processing: " << inputFile << std::endl;
         // inputImage is BGR order
-        processFrame(porterSpotter, inputImage, isDrawPersonBbox, isDrawSkeleton, outImage);
+        cv::Mat inputImage = cv::imread(inputFile);
+        std::vector<TrackedBbox> tracks;
+        std::vector<BboxXyxy> objectDetections;
+        processFrame(porterSpotter, inputImage, tracks, objectDetections);
+        std::cout << "Person num: " << tracks.size() << std::endl;
+        std::cout << "Object num: " << objectDetections.size() << std::endl;
+
+
+        cv::Mat outImage = inputImage.clone();
+        if (isDrawSkeleton) visualization_util::drawTracksSkeleton(tracks, outImage);
+        if (isDrawPersonBbox) visualization_util::drawPersonBbox(tracks, outImage);
+        if (isDrawObjectBbox) visualization_util::drawObjectBbox(objectDetections, outImage);
+        std::string outputImageFile = outDir + "/" + getStem(inputFile) + "_output.jpg";
         cv::imwrite(outputImageFile, outImage);
+
         porterSpotter.ResetTracker(); //画像が連続の場合はコメントアウト
     }
 
@@ -216,14 +212,14 @@ int main(int argc, char **argv)
         std::cout << "Failed to initialize detection model" << std::endl;
         return false;
     }
-    if (!initModel(porterSpotter, modelType2, FLAGS_h, runtimes))
+    if (!initModel(porterSpotter, modelType2, FLAGS_p, runtimes))
     {
         std::cout << "Failed to initialize pose estimation model" << std::endl;
         return false;
     }
 
     // Run analysis
-    if (analizeImage(porterSpotter, FLAGS_input_files, FLAGS_output_dir, FLAGS_person_box, FLAGS_skeleton))
+    if (analizeImage(porterSpotter, FLAGS_input_dir, FLAGS_output_dir, FLAGS_person_box, FLAGS_object_box, FLAGS_skeleton))
     {
         return EXIT_SUCCESS;
     }

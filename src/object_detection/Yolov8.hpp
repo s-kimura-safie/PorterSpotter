@@ -19,6 +19,8 @@ public:
     struct BoundingBox; // FIXME: 消す
 
 private:
+    int image_width;
+    int image_height;
     float ratio;
     int paddingWidthIdx;
     int paddingHeightIdx;

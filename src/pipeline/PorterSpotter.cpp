@@ -9,6 +9,31 @@
 
 #include "PorterSpotter.hpp"
 
+// 人物のKEYPOINTの手の位置と物体のBBOXの中心から一定の距離以内であれば、tracksのisHoldingObjectフラグをtrueにする
+void checkObjectHolding(std::vector<TrackedBbox> &tracks, std::vector<BboxXyxy> &objectDetections)
+{
+    for (TrackedBbox &track : tracks)
+    {
+        PosePoint rightHandPoint = track.poseKeypoints[5]; // 右手
+        PosePoint leftHandPoint = track.poseKeypoints[6]; // 左手
+        
+        for (BboxXyxy &objectDetection : objectDetections)
+        {
+            double objectCenterX = (objectDetection.x0 + objectDetection.x1) / 2;
+            double objectCenterY = (objectDetection.y0 + objectDetection.y1) / 2;
+            double distanceFromRight = sqrt(pow(rightHandPoint.x - objectCenterX, 2) + pow(rightHandPoint.y - objectCenterY, 2));
+            double distanceFromLeft = sqrt(pow(leftHandPoint.x - objectCenterX, 2) + pow(leftHandPoint.y - objectCenterY, 2));
+            
+            double distance = std::min(distanceFromRight, distanceFromLeft);
+            if (distance < 0.1)
+            {
+                track.isHoldingObject = true;
+                break;
+            }
+        }
+    }
+}
+
 PorterSpotter::PorterSpotter()
 {
     isDetectionModelReady = false;
@@ -51,26 +76,20 @@ bool PorterSpotter::InitializePoseEstimator(const uint8_t *buffer, const size_t 
 
 void PorterSpotter::ResetTracker() { byte.Reset(); }
 
-void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &tracks)
+void PorterSpotter::Run(const cv::Mat &rgbImage, std::vector<TrackedBbox> &tracks, std::vector<BboxXyxy> &objectDetections)
 {
-    std::cout << "Start Porter Spotter" << std::endl;
-    // detection
+    // 物体検出
     std::vector<std::vector<BboxXyxy>> multiclassDetections;
-
     yolov8.Infer(rgbImage, multiclassDetections);
-    std::cout << "size:" << multiclassDetections.size() << std::endl;
 
-    // tracking
-    const std::vector<BboxXyxy>& personDetections = multiclassDetections[0];
+    // 追跡
+    const std::vector<BboxXyxy> &personDetections = multiclassDetections[0];
     byte.Exec(personDetections, tracks);
 
-    // pose estimation
+    // 姿勢推定
     poseEstimator.Exec(rgbImage, tracks);
 
-    // action recognition
-    for (TrackedBbox &track : tracks)
-    {
-        const std::vector<BboxXyxy>& objectDetections = multiclassDetections[1];
-        // hold detection
-    }
+    // 対象物を持っているかどうかの判定
+    objectDetections = multiclassDetections[1];
+    checkObjectHolding(tracks, objectDetections);
 }
