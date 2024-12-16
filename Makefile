@@ -63,13 +63,11 @@ SA_SRCS         := $(wildcard $(SA_SRC_DIR)/*.cpp) \
                     $(wildcard $(SA_SRC_DIR)/tracking/*.cpp) \
                     $(wildcard $(SA_SRC_DIR)/utils/*.cpp)
 
-SA_SRCS:= $(filter-out $(SA_SRC_DIR)/OfflineVideoAnalysis.cpp, $(SA_SRCS))
-
 SA_OBJ_DIR      := $(OBJ_DIR)
 SA_OBJS         := $(SA_SRCS:$(SA_SRC_DIR)/%.cpp=$(SA_OBJ_DIR)/%.o)
 
 # List .cpp files which contains main
-MAIN_SRCS		:= OfflinePoseEstimator.cpp OfflinePorterSpotter.cpp OfflineVideoPorterSpotter.cpp
+MAIN_SRCS		:= OfflinePoseEstimator.cpp OfflinePorterSpotter.cpp OfflinePorterSpotterV.cpp
 MAIN_OBJS		:= $(MAIN_SRCS:%.cpp=$(SA_OBJ_DIR)/%.o)
 SA_OBJS_WO_MAIN	:= $(filter-out $(MAIN_OBJS), $(SA_OBJS))
 

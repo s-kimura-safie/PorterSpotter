@@ -52,10 +52,10 @@ make
 ./bin/x86-64/OfflinePorterSpotter -d models/yolov8s.dlc -p models/rtmpose.dlc -input_dir images -person_box -object_box -skeleton
 ```
 
-### OfflineVideoPorterSpotter
+### OfflinePorterSpotterV
 オフラインで動画上の人物が対象の物体を持っているかを検出します。
 `./videos`に入力する動画を保存してください。  
 以下のコマンドを実行すると検出した人物が対象の物体を持っているかのを判定した結果が `outputs` に出力されます。
 ```bash
-./bin/x86-64/OfflineVideoPorterSpotter -d models/yolov8s.dlc -p models/rtmpose.dlc -input_file videos/sample.mp4 -output_video -person_box -object_box -skeleton
+./bin/x86-64/OfflinePorterSpotterV -d models/yolov8s.dlc -p models/rtmpose.dlc -input_file videos/sample.mp4 -output_video -person_box -object_box -skeleton
 ```
