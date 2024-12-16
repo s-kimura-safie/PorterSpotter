@@ -17,26 +17,16 @@ ifeq ($(TARGET),x86-64)
     INCLUDES	+= -I /usr/include/eigen3 -I /usr/local/include/opencv4
 endif
 
-ifeq ($(TARGET),aarch64)
-    CXX         := aarch64-oe-linux-g++
-    CXXFLAGS    += --sysroot=/usr/local/oecore-x86_64/sysroots/aarch64-oe-linux
-    LDFLAGS     += -L $(SNPE_ROOT)/lib/aarch64-oe-linux-gcc8.2 -L $(APP_ROOT)/lib/aarch64-oe-linux-gcc8.2
-    LDFLAGS	    += --sysroot=/usr/local/oecore-x86_64/sysroots/aarch64-oe-linux
-    MARCH       := armv8-a  
-    INCLUDES    += -I $(APP_FW_ROOT)/lib/prebuild/aarch64-linux-gnu.ipro_amba_cv2x/include # for OpenCV
-    ENV_SETUP   += "UNSET LD_LIBRARY_PATH && source /usr/local/oecore-x86_64/environment-setup-aarch64-oe-linux"
-endif
-
 # Include paths
 INCLUDES += \
     -I $(SNPE_ROOT)/include/zdl \
-    -I $(CURDIR)/src
+    -I $(CURDIR)/src \
+    -I $(CURDIR)/src/utils
 
 # Specify the link libraries
 LDLIBS += -lSNPE
-ifeq ($(TARGET),aarch64)
-    LDLIBS += -lopencv_world
-else
+ifeq ($(TARGET),x86-64)
+
     LDLIBS += -lgflags_nothreads
     LDLIBS += -lopencv_calib3d
     LDLIBS += -lopencv_core
@@ -70,20 +60,16 @@ SA_SRCS         := $(wildcard $(SA_SRC_DIR)/*.cpp) \
                     $(wildcard $(SA_SRC_DIR)/object_detection/*.cpp) \
 					$(wildcard $(SA_SRC_DIR)/pipeline/*.cpp) \
                     $(wildcard $(SA_SRC_DIR)/pose_estimation/*.cpp) \
-                    $(wildcard $(SA_SRC_DIR)/tracking/*.cpp)
+                    $(wildcard $(SA_SRC_DIR)/tracking/*.cpp) \
+                    $(wildcard $(SA_SRC_DIR)/utils/*.cpp)
 
-ifeq ($(TARGET),aarch64)
-    SA_SRCS     := $(filter-out $(SA_SRC_DIR)/OfflineVideoAnalysis.cpp, $(SA_SRCS))
-endif
-ifeq ($(TARGET),x86-64)
-    SA_SRCS     := $(filter-out $(SA_SRC_DIR)/OfflineEvkVideoAnalysis.cpp, $(SA_SRCS))
-endif
+SA_SRCS:= $(filter-out $(SA_SRC_DIR)/OfflineVideoAnalysis.cpp, $(SA_SRCS))
 
 SA_OBJ_DIR      := $(OBJ_DIR)
 SA_OBJS         := $(SA_SRCS:$(SA_SRC_DIR)/%.cpp=$(SA_OBJ_DIR)/%.o)
 
 # List .cpp files which contains main
-MAIN_SRCS		:= OfflinePoseEstimator.cpp OfflineVideoAnalysis.cpp OfflineImageAnalysis.cpp
+MAIN_SRCS		:= OfflinePoseEstimator.cpp OfflinePorterSpotter.cpp
 MAIN_OBJS		:= $(MAIN_SRCS:%.cpp=$(SA_OBJ_DIR)/%.o)
 SA_OBJS_WO_MAIN	:= $(filter-out $(MAIN_OBJS), $(SA_OBJS))
 
