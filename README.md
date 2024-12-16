@@ -49,6 +49,5 @@ make
 `./images`に入力する画像を保存してください。  
 以下のコマンドを実行すると検出した人物が対象の物体を持っているかのを判定した結果が `outputs` に出力されます。
 ```bash
-./bin/x86-64/OfflinePorterSpotter -d models/yolov8s.dlc -p models/rtmpose.dlc images/*.jpg
+./bin/x86-64/OfflinePorterSpotter -d models/yolov8s.dlc -p models/rtmpose.dlc -input_dir images -person_box -object_box -skeleton
 ```
-
